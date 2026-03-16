@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { authApi } from '../api/auth';
 import { reportApi } from '../api/report';
 import { Card } from '../components/common/Card';
-import { Button } from '../components/common/Button';
-import { Input } from '../components/common/Input';
 import { StoreSettings } from '../components/settings/StoreSettings';
 import { PrinterSettings } from '../components/settings/PrinterSettings';
 import { TemplateSettings } from '../components/settings/TemplateSettings';
@@ -92,7 +89,7 @@ export const Settings: React.FC = () => {
         {activeTab === 'printer' && <PrinterSettings />}
         {activeTab === 'templates' && (
           <TemplateSettings
-            storeName={tenant?.name}
+            storeName={tenant?.store_name}
             logoUrl={tenant?.logo_url} 
             templates={templates} 
             onRefresh={loadTemplates}

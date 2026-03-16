@@ -231,7 +231,7 @@ export const Order: React.FC = () => {
     setIsPaymentModalOpen(true);
   };
 
-  const handlePayment = async (paymentMethod: string, customerName?: string, cashAmount?: number) => {
+const handlePayment = async (paymentMethod: string, customerName?: string, cashAmount?: number): Promise<any> => {
     if (cashAmount) setPaidAmount(cashAmount);
     try {
       const orderData = {

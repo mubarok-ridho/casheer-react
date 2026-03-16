@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { orderApi } from '../api/order';
-import { reportApi } from '../api/report';
 import { Order, ReceiptTemplate } from '../types';
 import { formatCurrency } from '../utils/format';
 import { useReceipt } from '../hooks/useReceipt';
@@ -88,7 +87,7 @@ const OrderRow: React.FC<{
   order: Order;
   onPrint: (order: Order) => void;
   template: ReceiptTemplate | null;
-}> = ({ order, onPrint, template }) => {
+}> = ({ order, onPrint }) => {
   const [expanded, setExpanded] = useState(false);
 
   return (

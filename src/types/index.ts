@@ -16,6 +16,8 @@ export interface Tenant {
   logo_url: string;
   receipt_template: string;
   receipt_width: '58mm' | '80mm';
+  printer_mac?: string;
+  name?: string;
 }
 
 export interface LoginCredentials {

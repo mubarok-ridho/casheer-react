@@ -4,7 +4,7 @@ import { reportApi } from '../api/report';
 import { ExpenseList } from '../components/report/ExpenseList';
 import { ExpenseForm } from '../components/report/ExpenseForm';
 import { Modal } from '../components/common/Modal';
-import { formatCurrency, formatDate } from '../utils/format';
+import { formatCurrency } from '../utils/format';
 import toast from 'react-hot-toast';
 
 // ── SVG Icons ──────────────────────────────────────────────────────────────────

@@ -16,39 +16,31 @@ api.interceptors.request.use((config) => {
 });
 
 export const orderApi = {
-  // Create order
   createOrder: async (order: OrderRequest): Promise<Order> => {
     const response = await api.post('/orders', order);
     return response.data;
   },
 
-  // Get orders with pagination
   getOrders: async (page: number = 1, limit: number = 20, startDate?: string, endDate?: string) => {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-    });
+    const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
-
     const response = await api.get('/orders', { params });
     return response.data;
   },
 
-  // Get order by ID
   getOrder: async (id: number): Promise<Order> => {
     const response = await api.get(`/orders/${id}`);
     return response.data;
   },
 
-  // Get orders by tenant (recent)
-  deleteOldOrders: async (days: number) => {
-    const response = await api.delete(`/orders/cleanup?days=${days}`);
+  getRecentOrders: async (days: number = 7): Promise<Order[]> => {
+    const response = await api.get(`/orders/tenant/${days}`);
     return response.data;
   },
 
-  getRecentOrders: async (days: number = 7): Promise<Order[]> => {
-    const response = await api.get(`/orders/tenant/${days}`);
+  deleteOldOrders: async (days: number): Promise<{ deleted: number; message: string }> => {
+    const response = await api.delete(`/orders/cleanup?days=${days}`);
     return response.data;
   },
 };
