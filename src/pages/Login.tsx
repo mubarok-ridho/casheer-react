@@ -5,8 +5,11 @@ import { z } from 'zod';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { gsap } from 'gsap';
+import { MorphSVGPlugin } from 'gsap/MorphSVGPlugin';
 
 // Register GSAP plugins
+gsap.registerPlugin(MorphSVGPlugin);
 
 const loginSchema = z.object({
   email: z.string().email('Email tidak valid'),
@@ -18,85 +21,363 @@ type LoginForm = z.infer<typeof loginSchema>;
 const CatBarista: React.FC<{
   pupilOffset: { x: number; y: number };
   isCovering: boolean;
-}> = ({ pupilOffset, isCovering }) => {
-
-  const pawLeftY = isCovering ? 30 : 0;
-  const pawRightY = isCovering ? 30 : 0;
-
+  isHappy: boolean;
+  emailValue: string;
+  isEmailFocused: boolean;
+}> = ({ pupilOffset, isCovering, isHappy, emailValue, isEmailFocused }) => {
+  
+  // Refs for animated elements
+  const faceRef = useRef<SVGGElement>(null);
+  const eyeLRef = useRef<SVGEllipseElement>(null);
+  const eyeRRef = useRef<SVGEllipseElement>(null);
+  const noseRef = useRef<SVGPolygonElement>(null);
+  const mouthRef = useRef<SVGPathElement>(null);
+  const mouthBGRef = useRef<SVGPathElement>(null);
+  const toothRef = useRef<SVGCircleElement>(null);
+  const tongueRef = useRef<SVGEllipseElement>(null);
+  const earLRef = useRef<SVGPolygonElement>(null);
+  const earRRef = useRef<SVGPolygonElement>(null);
+  const whiskersRef = useRef<SVGGElement>(null);
+  
+  // Mouth states for morphing
+  const [mouthStatus, setMouthStatus] = useState<"small" | "medium" | "large">("small");
+  
+  // Yeti-inspired mouth paths
+  const mouthSmallPath = "M 114 107 Q 110 114 104 111 M 126 107 Q 130 114 136 111";
+  const mouthMediumPath = "M 114 107 Q 110 116 104 112 M 126 107 Q 130 116 136 112";
+  const mouthLargePath = "M 108 113 Q 120 122 132 113";
+  
+  // Animate based on email input
+  useEffect(() => {
+    if (!isEmailFocused) {
+      // Reset when not focused
+      if (mouthStatus !== "small") {
+        setMouthStatus("small");
+        
+        // Animate mouth back to small
+        gsap.to([mouthRef.current, mouthBGRef.current], {
+          duration: 1,
+          attr: { d: mouthSmallPath },
+          ease: "expo.out"
+        });
+        
+        // Reset tooth and tongue
+        gsap.to(toothRef.current, {
+          duration: 1,
+          x: 0,
+          y: 0,
+          ease: "expo.out"
+        });
+        
+        gsap.to(tongueRef.current, {
+          duration: 1,
+          y: 0,
+          ease: "expo.out"
+        });
+        
+        // Reset eyes size
+        gsap.to([eyeLRef.current, eyeRRef.current], {
+          duration: 1,
+          attr: { rx: 13, ry: 14 },
+          scale: 1,
+          ease: "expo.out"
+        });
+      }
+      return;
+    }
+    
+    const value = emailValue;
+    const curEmailIndex = value.length;
+    
+    if (curEmailIndex > 0) {
+      if (mouthStatus === "small") {
+        setMouthStatus("medium");
+        
+        gsap.to([mouthRef.current, mouthBGRef.current], {
+          duration: 1,
+          attr: { d: mouthMediumPath },
+          ease: "expo.out"
+        });
+        
+        gsap.to(toothRef.current, {
+          duration: 1,
+          x: 0,
+          y: 0,
+          ease: "expo.out"
+        });
+        
+        gsap.to(tongueRef.current, {
+          duration: 1,
+          y: 1,
+          ease: "expo.out"
+        });
+        
+        gsap.to([eyeLRef.current, eyeRRef.current], {
+          duration: 1,
+          attr: { rx: 11, ry: 12 },
+          scale: 0.85,
+          ease: "expo.out"
+        });
+      }
+      
+      if (value.includes('@')) {
+        if (mouthStatus !== "large") {
+          setMouthStatus("large");
+          
+          gsap.to([mouthRef.current, mouthBGRef.current], {
+            duration: 1,
+            attr: { d: mouthLargePath },
+            ease: "expo.out"
+          });
+          
+          gsap.to(toothRef.current, {
+            duration: 1,
+            x: 3,
+            y: -2,
+            ease: "expo.out"
+          });
+          
+          gsap.to(tongueRef.current, {
+            duration: 1,
+            y: 2,
+            ease: "expo.out"
+          });
+          
+          gsap.to([eyeLRef.current, eyeRRef.current], {
+            duration: 1,
+            attr: { rx: 8.5, ry: 9 },
+            scale: 0.65,
+            ease: "expo.out",
+            transformOrigin: "center center"
+          });
+        }
+      } else if (mouthStatus !== "medium") {
+        setMouthStatus("medium");
+        
+        gsap.to([mouthRef.current, mouthBGRef.current], {
+          duration: 1,
+          attr: { d: mouthMediumPath },
+          ease: "expo.out"
+        });
+        
+        gsap.to(toothRef.current, {
+          duration: 1,
+          x: 0,
+          y: 0,
+          ease: "expo.out"
+        });
+        
+        gsap.to(tongueRef.current, {
+          duration: 1,
+          y: 1,
+          ease: "expo.out"
+        });
+        
+        gsap.to([eyeLRef.current, eyeRRef.current], {
+          duration: 1,
+          attr: { rx: 11, ry: 12 },
+          scale: 0.85,
+          ease: "expo.out"
+        });
+      }
+    } else {
+      if (mouthStatus !== "small") {
+        setMouthStatus("small");
+        
+        gsap.to([mouthRef.current, mouthBGRef.current], {
+          duration: 1,
+          attr: { d: mouthSmallPath },
+          ease: "expo.out"
+        });
+        
+        gsap.to(toothRef.current, {
+          duration: 1,
+          x: 0,
+          y: 0,
+          ease: "expo.out"
+        });
+        
+        gsap.to(tongueRef.current, {
+          duration: 1,
+          y: 0,
+          ease: "expo.out"
+        });
+        
+        gsap.to([eyeLRef.current, eyeRRef.current], {
+          duration: 1,
+          attr: { rx: 13, ry: 14 },
+          scale: 1,
+          ease: "expo.out"
+        });
+      }
+    }
+  }, [emailValue, isEmailFocused, mouthStatus]);
+  
+  // Animate face based on pupil position (Yeti-style head movement)
+  useEffect(() => {
+    if (!faceRef.current || isCovering) return;
+    
+    // Calculate head tilt based on pupil offset
+    const headTiltX = pupilOffset.x * 0.3;
+    const headTiltY = pupilOffset.y * 0.4;
+    const headSkew = pupilOffset.x * 0.5;
+    
+    gsap.to(faceRef.current, {
+      duration: 1,
+      x: -headTiltX,
+      y: -headTiltY,
+      skewX: -headSkew,
+      transformOrigin: "center top",
+      ease: "expo.out"
+    });
+    
+    // Animate ears
+    gsap.to([earLRef.current, earRRef.current], {
+      duration: 1,
+      x: pupilOffset.x * 0.2,
+      y: pupilOffset.y * 0.3,
+      rotation: pupilOffset.x * 0.5,
+      ease: "expo.out"
+    });
+    
+    // Animate whiskers
+    gsap.to(whiskersRef.current, {
+      duration: 1,
+      x: pupilOffset.x * 0.1,
+      y: pupilOffset.y * 0.1,
+      skewX: pupilOffset.x * 0.3,
+      ease: "expo.out"
+    });
+    
+  }, [pupilOffset, isCovering]);
+  
   return (
-    <svg viewBox="0 0 240 160" width="100%" height="100%" style={{overflow:'visible'}}>
-
+    <svg viewBox="0 0 240 160" width="100%" height="100%" style={{ overflow: 'visible' }}>
       <defs>
-        <radialGradient id="fur" cx="40%" cy="35%" r="65%">
-          <stop offset="0%" stopColor="#e9e1d2"/>
-          <stop offset="100%" stopColor="#c9b89a"/>
+        <radialGradient id="catBodyG" cx="45%" cy="35%" r="65%">
+          <stop offset="0%" stopColor="#e8dfd0" />
+          <stop offset="100%" stopColor="#c8b99a" />
         </radialGradient>
-
-        <radialGradient id="inner" cx="50%" cy="45%" r="55%">
-          <stop offset="0%" stopColor="#f5ede0"/>
-          <stop offset="100%" stopColor="#e3d3bb"/>
+        <radialGradient id="catInnerG" cx="50%" cy="45%" r="55%">
+          <stop offset="0%" stopColor="#f5ede0" />
+          <stop offset="100%" stopColor="#e0cdb5" />
         </radialGradient>
-
-        <filter id="shadow">
-          <feDropShadow dx="0" dy="8" stdDeviation="10" floodColor="rgba(0,0,0,0.25)" />
+        <radialGradient id="cheekG" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#e8a090" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#e8a090" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id="hatG" cx="40%" cy="30%" r="65%">
+          <stop offset="0%" stopColor="#6b7d58" />
+          <stop offset="100%" stopColor="#3d4a2e" />
+        </radialGradient>
+        <radialGradient id="pawG" cx="40%" cy="30%" r="65%">
+          <stop offset="0%" stopColor="#ddd0bb" />
+          <stop offset="100%" stopColor="#b8a888" />
+        </radialGradient>
+        <filter id="catShadow">
+          <feDropShadow dx="0" dy="8" stdDeviation="10" floodColor="rgba(60,70,45,0.22)" />
         </filter>
       </defs>
 
-      <g filter="url(#shadow)">
+      <g filter="url(#catShadow)">
+        {/* Hat */}
+        <ellipse cx="120" cy="28" rx="52" ry="10" fill="#3d4a2e" />
+        <rect x="80" y="0" width="80" height="30" rx="6" fill="url(#hatG)" />
+        <rect x="80" y="22" width="80" height="8" rx="2" fill="#2c3620" />
+        <rect x="84" y="4" width="30" height="14" rx="4" fill="rgba(255,255,255,0.1)" />
+        
+        {/* Main face group */}
+        <g ref={faceRef}>
+          <ellipse cx="120" cy="90" rx="72" ry="68" fill="url(#catBodyG)" />
+          
+          {/* Ears */}
+          <polygon ref={earLRef} points="58,48 44,18 80,42" fill="url(#catBodyG)" />
+          <polygon points="62,46 52,26 76,42" fill="#e8a090" opacity="0.6" />
+          <polygon ref={earRRef} points="182,48 196,18 160,42" fill="url(#catBodyG)" />
+          <polygon points="178,46 188,26 164,42" fill="#e8a090" opacity="0.6" />
+          
+          <ellipse cx="120" cy="108" rx="36" ry="28" fill="url(#catInnerG)" />
 
-        {/* head */}
-        <ellipse cx="120" cy="90" rx="70" ry="64" fill="url(#fur)" />
+          {/* Eyes */}
+          {!isCovering && (
+            <g>
+              <ellipse cx="96" cy="82" rx="15" ry="16" fill="white" />
+              <ellipse ref={eyeLRef} cx="96" cy="82" rx="13" ry="14" fill="#7a9e6a" />
+              <ellipse cx={96 + pupilOffset.x} cy={82 + pupilOffset.y} rx="7" ry="9" fill="#1a2212" />
+              <circle cx={98 + pupilOffset.x * 0.4} cy={78 + pupilOffset.y * 0.4} r="3" fill="white" opacity="0.9" />
+              <ellipse cx="96" cy="68" rx="15" ry="7" fill="url(#catBodyG)" />
+              
+              <ellipse cx="144" cy="82" rx="15" ry="16" fill="white" />
+              <ellipse ref={eyeRRef} cx="144" cy="82" rx="13" ry="14" fill="#7a9e6a" />
+              <ellipse cx={144 + pupilOffset.x} cy={82 + pupilOffset.y} rx="7" ry="9" fill="#1a2212" />
+              <circle cx={146 + pupilOffset.x * 0.4} cy={78 + pupilOffset.y * 0.4} r="3" fill="white" opacity="0.9" />
+              <ellipse cx="144" cy="68" rx="15" ry="7" fill="url(#catBodyG)" />
+            </g>
+          )}
 
-        {/* ears */}
-        <polygon points="60,48 45,18 82,42" fill="url(#fur)" />
-        <polygon points="180,48 195,18 158,42" fill="url(#fur)" />
+          {/* Covered eyes */}
+          {isCovering && (
+            <g>
+              <path d="M 81 82 Q 96 73 111 82" stroke="#5a6a48" strokeWidth="3" fill="none" strokeLinecap="round" />
+              <line x1="86" y1="80" x2="84" y2="74" stroke="#5a6a48" strokeWidth="2" strokeLinecap="round" />
+              <line x1="96" y1="76" x2="96" y2="70" stroke="#5a6a48" strokeWidth="2" strokeLinecap="round" />
+              <line x1="106" y1="80" x2="108" y2="74" stroke="#5a6a48" strokeWidth="2" strokeLinecap="round" />
+              <path d="M 129 82 Q 144 73 159 82" stroke="#5a6a48" strokeWidth="3" fill="none" strokeLinecap="round" />
+              <line x1="134" y1="80" x2="132" y2="74" stroke="#5a6a48" strokeWidth="2" strokeLinecap="round" />
+              <line x1="144" y1="76" x2="144" y2="70" stroke="#5a6a48" strokeWidth="2" strokeLinecap="round" />
+              <line x1="154" y1="80" x2="156" y2="74" stroke="#5a6a48" strokeWidth="2" strokeLinecap="round" />
+            </g>
+          )}
 
-        {/* inner ears */}
-        <polygon points="62,46 53,26 75,41" fill="#e8a090" opacity=".6"/>
-        <polygon points="178,46 187,26 165,41" fill="#e8a090" opacity=".6"/>
+          {/* Nose */}
+          <polygon ref={noseRef} points="120,100 114,107 126,107" fill="#d08878" />
 
-        {/* face patch */}
-        <ellipse cx="120" cy="108" rx="34" ry="26" fill="url(#inner)" />
+          {/* Mouth and tongue */}
+          <path ref={mouthRef} d={isHappy ? "M 108 113 Q 120 122 132 113" : mouthStatus === "small" ? mouthSmallPath : mouthStatus === "medium" ? mouthMediumPath : mouthLargePath} stroke="#b06858" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+          
+          {/* Hidden BG path for morphing (same as mouth) */}
+          <path ref={mouthBGRef} d={mouthStatus === "small" ? mouthSmallPath : mouthStatus === "medium" ? mouthMediumPath : mouthLargePath} fill="none" opacity="0" />
+          
+          {/* Tooth */}
+          <circle ref={toothRef} cx="120" cy="107" r="2" fill="#ffffff" />
+          
+          {/* Tongue */}
+          {isHappy && (
+            <ellipse ref={tongueRef} cx="120" cy="114" rx="6" ry="3" fill="#cc4a6c" opacity="0.8" />
+          )}
 
-        {/* eyes */}
-        {!isCovering && (
-        <>
-          <ellipse cx="95" cy="82" rx="15" ry="16" fill="white"/>
-          <ellipse cx="145" cy="82" rx="15" ry="16" fill="white"/>
-
-          <circle cx={95 + pupilOffset.x} cy={82 + pupilOffset.y} r="8" fill="#1f2418"/>
-          <circle cx={145 + pupilOffset.x} cy={82 + pupilOffset.y} r="8" fill="#1f2418"/>
-
-          <circle cx={98 + pupilOffset.x * .4} cy={78 + pupilOffset.y * .4} r="3" fill="white"/>
-          <circle cx={148 + pupilOffset.x * .4} cy={78 + pupilOffset.y * .4} r="3" fill="white"/>
-        </>
-        )}
-
-        {/* closed eyes when covering */}
-        {isCovering && (
-        <>
-          <path d="M80 82 Q95 74 110 82" stroke="#5a6a48" strokeWidth="3" fill="none"/>
-          <path d="M130 82 Q145 74 160 82" stroke="#5a6a48" strokeWidth="3" fill="none"/>
-        </>
-        )}
-
-        {/* nose */}
-        <polygon points="120,100 114,107 126,107" fill="#d08878"/>
-
-        {/* friendly smile */}
-        <path d="M110 112 Q120 120 130 112" stroke="#b06858" strokeWidth="2.5" fill="none"/>
-
+          {/* Cheeks */}
+          <ellipse cx="78" cy="98" rx="16" ry="11" fill="url(#cheekG)" />
+          <ellipse cx="162" cy="98" rx="16" ry="11" fill="url(#cheekG)" />
+          
+          {/* Whiskers group */}
+          <g ref={whiskersRef}>
+            <line x1="60" y1="100" x2="96" y2="104" stroke="#9a8878" strokeWidth="1.5" opacity="0.6" strokeLinecap="round" />
+            <line x1="58" y1="108" x2="96" y2="108" stroke="#9a8878" strokeWidth="1.5" opacity="0.6" strokeLinecap="round" />
+            <line x1="60" y1="116" x2="96" y2="112" stroke="#9a8878" strokeWidth="1.5" opacity="0.6" strokeLinecap="round" />
+            <line x1="180" y1="100" x2="144" y2="104" stroke="#9a8878" strokeWidth="1.5" opacity="0.6" strokeLinecap="round" />
+            <line x1="182" y1="108" x2="144" y2="108" stroke="#9a8878" strokeWidth="1.5" opacity="0.6" strokeLinecap="round" />
+            <line x1="180" y1="116" x2="144" y2="112" stroke="#9a8878" strokeWidth="1.5" opacity="0.6" strokeLinecap="round" />
+          </g>
+          
+          <ellipse cx="120" cy="158" rx="60" ry="22" fill="url(#catBodyG)" />
+          <polygon points="108,148 120,154 108,160" fill="#5a7040" />
+          <polygon points="132,148 120,154 132,160" fill="#5a7040" />
+          <circle cx="120" cy="154" r="4" fill="#3d4a2e" />
+        </g>
       </g>
 
-      {/* paws resting on card */}
-      <g transform={`translate(0 ${pawLeftY})`} style={{transition:'transform .4s ease'}}>
-        <circle cx="85" cy="140" r="16" fill="url(#fur)" />
-      </g>
-
-      <g transform={`translate(0 ${pawRightY})`} style={{transition:'transform .4s ease'}}>
-        <circle cx="155" cy="140" r="16" fill="url(#fur)" />
-      </g>
-
+      {/* Covering paw */}
+      {isCovering && (
+        <g>
+          <path d="M 165 155 Q 172 130 162 108 Q 156 94 148 84" stroke="url(#pawG)" strokeWidth="16" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="147" cy="82" r="14" fill="url(#pawG)" />
+          <circle cx="138" cy="74" r="7" fill="url(#pawG)" />
+          <circle cx="148" cy="70" r="7" fill="url(#pawG)" />
+          <circle cx="158" cy="74" r="7" fill="url(#pawG)" />
+          <ellipse cx="147" cy="85" rx="8" ry="6" fill="#d4a898" opacity="0.5" />
+        </g>
+      )}
     </svg>
   );
 };
