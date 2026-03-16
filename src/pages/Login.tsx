@@ -5,11 +5,8 @@ import { z } from 'zod';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { gsap } from 'gsap';
-import { MorphSVGPlugin } from 'gsap/MorphSVGPlugin';
 
 // Register GSAP plugins
-gsap.registerPlugin(MorphSVGPlugin);
 
 const loginSchema = z.object({
   email: z.string().email('Email tidak valid'),
