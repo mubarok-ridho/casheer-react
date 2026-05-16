@@ -10,16 +10,16 @@ import lottieTree from '../assets/Loadingpohon.json';
 import toast from 'react-hot-toast';
 
 // ── SVG Icons ─────────────────────────────────────────────────────────────────
-const IconRevenue   = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>;
-const IconOrders    = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>;
-const IconExpense   = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>;
-const IconProfit    = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>;
-const IconPlus      = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
-const IconCalendar  = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
-const IconChart     = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
-const IconTable     = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/></svg>;
-const IconLock      = () => <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
-const IconTrend     = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>;
+const IconRevenue = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>;
+const IconOrders = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" /></svg>;
+const IconExpense = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>;
+const IconProfit = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>;
+const IconPlus = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
+const IconCalendar = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>;
+const IconChart = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>;
+const IconTable = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="3" y1="15" x2="21" y2="15" /><line x1="9" y1="9" x2="9" y2="21" /></svg>;
+const IconLock = () => <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>;
+const IconTrend = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>;
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -66,7 +66,7 @@ const LoadingOverlay = () => (
     }}>
       <Lottie animationData={lottieTree} loop autoplay style={{ width: 180, height: 180 }} />
       <p className="rp-loading-text">Memuat laporan...</p>
-      <div className="rp-dots"><span/><span/><span/></div>
+      <div className="rp-dots"><span /><span /><span /></div>
     </div>
   </div>
 );
@@ -131,16 +131,16 @@ const AreaLineChart: React.FC<{ data: ChartPoint[]; height?: number }> = ({ data
         onMouseMove={onMove} onMouseLeave={() => setTooltip(null)}>
         <defs>
           <linearGradient id="rp-rev-grad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={C.primary} stopOpacity="0.28"/>
-            <stop offset="100%" stopColor={C.primary} stopOpacity="0.01"/>
+            <stop offset="0%" stopColor={C.primary} stopOpacity="0.28" />
+            <stop offset="100%" stopColor={C.primary} stopOpacity="0.01" />
           </linearGradient>
           <linearGradient id="rp-exp-grad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={C.red} stopOpacity="0.20"/>
-            <stop offset="100%" stopColor={C.red} stopOpacity="0.01"/>
+            <stop offset="0%" stopColor={C.red} stopOpacity="0.20" />
+            <stop offset="100%" stopColor={C.red} stopOpacity="0.01" />
           </linearGradient>
           <filter id="rp-glow">
-            <feGaussianBlur stdDeviation="2" result="b"/>
-            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            <feGaussianBlur stdDeviation="2" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
           </filter>
         </defs>
 
@@ -152,7 +152,7 @@ const AreaLineChart: React.FC<{ data: ChartPoint[]; height?: number }> = ({ data
               strokeDasharray={i === 0 ? '0' : '5 4'} />
             <text x={PAD.l - 10} y={t.y + 4} textAnchor="end" fontSize="10" fill={C.sub}
               fontFamily="Plus Jakarta Sans, sans-serif">
-              {t.val >= 1e6 ? `${(t.val/1e6).toFixed(1)}M` : t.val >= 1000 ? `${(t.val/1000).toFixed(0)}K` : t.val.toFixed(0)}
+              {t.val >= 1e6 ? `${(t.val / 1e6).toFixed(1)}M` : t.val >= 1000 ? `${(t.val / 1000).toFixed(0)}K` : t.val.toFixed(0)}
             </text>
           </g>
         ))}
@@ -361,10 +361,11 @@ export const Report: React.FC = () => {
   const loadReports = async () => {
     setIsLoading(true);
     try {
+      const month = parseInt(selectedDate.split('-')[1], 10);
       const [daily, monthly, revenue] = await Promise.all([
         reportApi.getDailyReport(selectedDate),
         // Kirim selectedDate agar monthly report mengambil bulan yang benar
-        reportApi.getMonthlyReport(selectedDate),
+        reportApi.getMonthlyReport(month),
         // Ambil 30 hari data agar window 7 hari selalu tersedia
         reportApi.getRevenueSummary(30),
       ]);
@@ -413,10 +414,10 @@ export const Report: React.FC = () => {
     expense: d.expense || 0,
   }));
 
-  const totalRevenue  = dailyReport?.total_revenue || 0;
+  const totalRevenue = dailyReport?.total_revenue || 0;
   const totalExpenses = dailyReport?.total_expenses || 0;
-  const totalOrders   = dailyReport?.total_orders || 0;
-  const netProfit     = dailyReport?.net_profit || 0;
+  const totalOrders = dailyReport?.total_orders || 0;
+  const netProfit = dailyReport?.net_profit || 0;
 
   // Label range 7 hari untuk subtitle chart
   const weekLabel = weekDates.length === 7

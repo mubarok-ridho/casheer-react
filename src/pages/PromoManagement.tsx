@@ -12,6 +12,7 @@ interface PromoItem {
   variation_id?: number | null;
   quantity: number;
   menu?: Menu;
+  addon_mode?: string;
   variation?: MenuVariation;
 }
 interface Promo {
@@ -592,7 +593,7 @@ const PromoForm: React.FC<{ promo: Promo|null; menus: Menu[]; onSave:(d:any)=>Pr
                                     const selected = item.variation_id === v.id;
                                     return (
                                       <button key={v.id} onClick={()=>setVariation(item.menu_id, v.id)}
-                                        style={{ padding:'5px 12px',borderRadius:'8px',border:'none',cursor:'pointer',fontSize:'12px',fontWeight:'600',fontFamily:'inherit',
+                                        style={{ padding:'5px 12px',borderRadius:'8px',cursor:'pointer',fontSize:'12px',fontWeight:'600',fontFamily:'inherit',
                                           background:selected?C.primary:'#f5f2ed',color:selected?'white':C.text,
                                           border:`1.5px solid ${selected?C.primary:'#e8e4dc'}`,transition:'all 0.15s' }}
                                       >

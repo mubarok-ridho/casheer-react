@@ -384,7 +384,7 @@ const PromoVariationModal: React.FC<{
                               key={v.id}
                               onClick={() => setSelectedVariations(prev => ({ ...prev, [pi.menu_id]: v.id }))}
                               style={{
-                                padding: '6px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                                padding: '6px 12px', borderRadius: '8px', cursor: 'pointer',
                                 fontSize: '12px', fontWeight: '600', fontFamily: 'inherit',
                                 background: selected === v.id ? C.primary : 'white',
                                 color: selected === v.id ? 'white' : C.text,
