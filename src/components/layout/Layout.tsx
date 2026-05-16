@@ -39,6 +39,17 @@ export const Layout: React.FC = () => {
           min-height: 0;
           overflow: hidden;
         }
+        /* ── Mobile ── */
+        @media (max-width: 767px) {
+          .layout-body {
+            overflow: visible;
+            flex-direction: column;
+          }
+          .layout-main {
+            padding: 16px 16px 80px;
+            overflow-y: auto;
+          }
+        }
 
         /* Main content area */
         .layout-main {

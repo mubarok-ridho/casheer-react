@@ -413,7 +413,8 @@ export const Sidebar: React.FC = () => {
         @media (max-width: 767px) {
           .sidebar-desktop { display: none !important; }
           .sidebar-drawer  { display: flex; }
-          .sidebar-backdrop { display: block; }
+          .sidebar-backdrop { display: none; }
+          .sidebar-backdrop--visible { display: block; }
         }
 
         /* ── Tablet: show desktop sidebar as narrower icon rail, or full ── */
