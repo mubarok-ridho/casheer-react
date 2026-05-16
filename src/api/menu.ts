@@ -107,3 +107,32 @@ export const menuApi = {
     return response.data;
   },
 };
+export const promoApi = {
+  getAll: async () => {
+    const response = await api.get('/promos');
+    return response.data;
+  },
+  // Hanya promo aktif & belum expired — untuk halaman kasir
+  getActive: async () => {
+    const response = await api.get('/promos');
+    const all: any[] = Array.isArray(response.data) ? response.data : [];
+    const now = new Date();
+    return all.filter(p =>
+      p.is_active &&
+      new Date(p.start_at) <= now &&
+      (p.end_at === null || new Date(p.end_at) > now)
+    );
+  },
+  create: async (data: any) => {
+    const response = await api.post('/promos', data);
+    return response.data;
+  },
+  update: async (id: number, data: any) => {
+    const response = await api.put(`/promos/${id}`, data);
+    return response.data;
+  },
+  delete: async (id: number) => {
+    const response = await api.delete(`/promos/${id}`);
+    return response.data;
+  },
+};

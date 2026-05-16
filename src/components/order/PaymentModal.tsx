@@ -2,14 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { formatCurrency } from '../../utils/format';
 import { PAYMENT_METHODS } from '../../utils/constants';
-import { Order, Tenant, ReceiptTemplate } from '../../types';
+import { Order, Tenant, ReceiptTemplate, CartItem } from '../../types';
 import { useReceipt } from '../../hooks/useReceipt';
 
 interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onPayment: (method: string, customerName?: string, cashAmount?: number) => Promise<Order>;
+  onPayment: (
+    method: string,
+    customerName?: string,
+    cashAmount?: number,
+    discountType?: 'percent' | 'nominal',
+    discountValue?: number,
+  ) => Promise<any>;
   total: number;
+  items?: CartItem[];
   tenant: Tenant | null;
   defaultTemplate?: ReceiptTemplate | null;
 }
@@ -46,15 +53,10 @@ const DeleteIcon = () => (
     <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/>
   </svg>
 );
-const PrintIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-    <rect x="6" y="14" width="12" height="8"/>
-  </svg>
-);
-const SuccessIcon = () => (
-  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"/><polyline points="20 6 9 17 4 12"/>
+const TagIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+    <line x1="7" y1="7" x2="7.01" y2="7"/>
   </svg>
 );
 
@@ -62,41 +64,52 @@ const C = {
   primary: '#5B8C5A', primaryDark: '#3d5e3c', primaryLight: '#ebf4eb',
   text: '#2a2420', sub: '#8a8278', border: '#e8e4dc',
   red: '#E8604A', redLight: '#fdecea',
-  blue: '#217093', blueLight: '#e8f4fb',
+  orange: '#E8A23A', orangeLight: '#fff8e8',
 };
 
 const QUICK_AMOUNTS = [10000, 20000, 50000, 100000];
-
 const METHOD_ICONS: Record<string, React.ReactNode> = {
   cash: <CashIcon />, qris: <QrisIcon />, transfer: <TransferIcon />,
 };
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({
-  isOpen, onClose, onPayment, total, tenant, defaultTemplate,
+  isOpen, onClose, onPayment, total, items = [], tenant, defaultTemplate,
 }) => {
-  const [selectedMethod, setSelectedMethod] = useState('cash');
-  const [customerName,   setCustomerName]   = useState('');
-  const [cashInput,      setCashInput]      = useState('');
-  const [isProcessing,   setIsProcessing]   = useState(false);
-  const [nameFocused,    setNameFocused]    = useState(false);
-  const [cashFocused,    setCashFocused]    = useState(false);
-  const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
-
-  const { defaultTemplate: fetchedTemplate, printReceipt } = useReceipt();
-  const template = defaultTemplate ?? fetchedTemplate;
+  const [selectedMethod,  setSelectedMethod]  = useState('cash');
+  const [customerName,    setCustomerName]    = useState('');
+  const [cashInput,       setCashInput]       = useState('');
+  const [isProcessing,    setIsProcessing]    = useState(false);
+  const [nameFocused,     setNameFocused]     = useState(false);
+  const [cashFocused,     setCashFocused]     = useState(false);
+  const [discountEnabled, setDiscountEnabled] = useState(false);
+  const [discountType,    setDiscountType]    = useState<'percent' | 'nominal'>('percent');
+  const [discountInput,   setDiscountInput]   = useState('');
+  const [discountFocused, setDiscountFocused] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setCashInput('');
       setCustomerName('');
       setSelectedMethod('cash');
-      setCompletedOrder(null);
+      setDiscountEnabled(false);
+      setDiscountInput('');
+      setDiscountType('percent');
     }
   }, [isOpen]);
 
+  // ── Discount calculation ───────────────────────────────────────────────────
+  const discountRaw   = parseFloat(discountInput || '0');
+  const discountAmount = discountEnabled
+    ? discountType === 'percent'
+      ? Math.min(total, (total * Math.min(discountRaw, 100)) / 100)
+      : Math.min(total, discountRaw)
+    : 0;
+  const finalTotal    = Math.max(0, total - discountAmount);
+
+  // ── Cash ──────────────────────────────────────────────────────────────────
   const cashAmount = parseInt(cashInput.replace(/\D/g, '') || '0', 10);
-  const change     = cashAmount - total;
-  const canPay     = selectedMethod !== 'cash' || cashAmount >= total;
+  const change     = cashAmount - finalTotal;
+  const canPay     = selectedMethod !== 'cash' || cashAmount >= finalTotal;
 
   const handleCashInput = (val: string) => {
     const digits = val.replace(/\D/g, '').replace(/^0+/, '');
@@ -111,30 +124,17 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const handlePayment = async () => {
     setIsProcessing(true);
     try {
-      const order = await onPayment(
+      await onPayment(
         selectedMethod,
         customerName || undefined,
         selectedMethod === 'cash' ? cashAmount : undefined,
+        discountEnabled ? discountType : undefined,
+        discountEnabled ? discountAmount : undefined,
       );
-      setCompletedOrder(order);
+      onClose();
     } finally {
       setIsProcessing(false);
     }
-  };
-
-  const handlePrint = () => {
-    if (!completedOrder) return;
-    printReceipt(
-      completedOrder,
-      tenant,
-      template ?? null,
-      selectedMethod === 'cash' ? cashAmount : undefined,
-    );
-  };
-
-  const handleClose = () => {
-    setCompletedOrder(null);
-    onClose();
   };
 
   const inputStyle = (focused: boolean): React.CSSProperties => ({
@@ -146,141 +146,86 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     transition: 'all 0.2s',
   });
 
-  // ── SUCCESS STATE ─────────────────────────────────────────────────────────
-  if (completedOrder) {
-    return (
-      <Modal isOpen={isOpen} onClose={handleClose} title="Pembayaran Berhasil" size="md">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', fontFamily: "'DM Sans', sans-serif" }}>
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Pembayaran" size="md">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', fontFamily: "'DM Sans', sans-serif" }}>
 
-          {/* Success badge */}
-          <div style={{ textAlign: 'center', padding: '12px 0 4px' }}>
-            <div style={{ color: C.primary, display: 'inline-block', marginBottom: 8 }}>
-              <SuccessIcon />
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: C.text, letterSpacing: '-0.02em' }}>
-              {formatCurrency(completedOrder.total_amount)}
-            </div>
-            <div style={{ fontSize: 12, color: C.sub, marginTop: 4 }}>
-              #{completedOrder.order_number}
-            </div>
-          </div>
-
-          {/* Ringkasan struk mini */}
+        {/* ── Order Summary ── */}
+        {items.length > 0 && (
           <div style={{
-            background: '#faf9f6', borderRadius: 14, padding: '14px 16px',
-            border: `1px dashed ${C.border}`, fontFamily: 'monospace', fontSize: 12,
+            background: '#f9f8f5', borderRadius: '12px', padding: '12px 14px',
+            border: '1.5px solid #f0ece4',
           }}>
-            {/* Tenant name */}
-            <div style={{ textAlign: 'center', fontWeight: 700, marginBottom: 6, fontSize: 13 }}>
-              {tenant?.store_name ?? 'Struk Pembayaran'}
-            </div>
-
-            <div style={{ borderTop: '1px dashed #ccc', margin: '6px 0' }}/>
-
-            {/* Info */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-              <span style={{ color: C.sub }}>No</span>
-              <span>{completedOrder.order_number.slice(-8)}</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-              <span style={{ color: C.sub }}>Waktu</span>
-              <span>{new Date(completedOrder.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
-            </div>
-            {completedOrder.customer_name && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-                <span style={{ color: C.sub }}>Pelanggan</span>
-                <span>{completedOrder.customer_name}</span>
-              </div>
-            )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-              <span style={{ color: C.sub }}>Metode</span>
-              <span>{selectedMethod.toUpperCase()}</span>
-            </div>
-
-            <div style={{ borderTop: '1px dashed #ccc', margin: '6px 0' }}/>
-
-            {/* Items */}
-            {(completedOrder.items ?? []).map((item, i) => (
-              <div key={i} style={{ marginBottom: 4 }}>
-                <div style={{ fontWeight: 600 }}>{item.menu_name}{item.variation_name ? ` (${item.variation_name})` : ''}</div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: C.sub }}>
-                  <span>{item.quantity} x {formatCurrency(item.price)}</span>
-                  <span>{formatCurrency(item.subtotal)}</span>
+            <p style={{ margin: '0 0 8px', fontSize: '11px', fontWeight: '700', color: '#8a8278', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Ringkasan Order
+            </p>
+            {items.map((item, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ fontSize: '13px', color: '#2a2420', fontWeight: '600' }}>
+                    {item.name}
+                  </span>
+                  {item.variation_name && (
+                    <span style={{ fontSize: '11px', color: '#8a8278', marginLeft: '4px' }}>
+                      ({item.variation_name})
+                    </span>
+                  )}
+                  {item.notes && (
+                    <p style={{ margin: '1px 0 0', fontSize: '11px', color: '#9a9288', fontStyle: 'italic' }}>
+                      * {item.notes}
+                    </p>
+                  )}
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '12px' }}>
+                  <span style={{ fontSize: '12px', color: '#8a8278' }}>{item.quantity}x</span>
+                  <span style={{ fontSize: '13px', fontWeight: '700', color: '#5B8C5A', marginLeft: '6px' }}>
+                    {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.subtotal)}
+                  </span>
                 </div>
               </div>
             ))}
-
-            <div style={{ borderTop: '1px dashed #ccc', margin: '6px 0' }}/>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 13 }}>
-              <span>TOTAL</span>
-              <span>{formatCurrency(completedOrder.total_amount)}</span>
-            </div>
-            {selectedMethod === 'cash' && cashAmount > 0 && (
-              <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: C.sub, marginTop: 2 }}>
-                  <span>Tunai</span><span>{formatCurrency(cashAmount)}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: C.primary, fontWeight: 700, marginTop: 2 }}>
-                  <span>Kembali</span><span>{formatCurrency(Math.max(0, cashAmount - completedOrder.total_amount))}</span>
-                </div>
-              </>
-            )}
-
-            <div style={{ borderTop: '1px dashed #ccc', margin: '6px 0' }}/>
-            <div style={{ textAlign: 'center', color: C.sub }}>
-              {template?.footer || 'Terima kasih!'}
+            <div style={{ borderTop: '1px dashed #e8e4dc', marginTop: '8px', paddingTop: '6px', display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '12px', color: '#8a8278', fontWeight: '600' }}>Subtotal</span>
+              <span style={{ fontSize: '13px', fontWeight: '700', color: '#2a2420' }}>
+                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(total)}
+              </span>
             </div>
           </div>
+        )}
 
-          {/* Actions */}
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={handleClose} style={{
-              flex: 1, padding: '12px', borderRadius: '11px',
-              border: `1.5px solid ${C.border}`, background: 'white',
-              color: C.sub, cursor: 'pointer', fontSize: '13px', fontWeight: '700',
-              fontFamily: "'DM Sans', sans-serif",
-            }}>Tutup</button>
-
-            <button onClick={handlePrint} style={{
-              flex: 2, padding: '12px', borderRadius: '11px', border: 'none',
-              background: `linear-gradient(135deg, ${C.blue}, #4eb8dd)`,
-              color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: '700',
-              fontFamily: "'DM Sans', sans-serif",
-              boxShadow: '0 4px 14px rgba(33,112,147,0.3)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            }}>
-              <PrintIcon /> Cetak Struk
-            </button>
-          </div>
-
-          {/* Info ukuran kertas */}
-          <div style={{ textAlign: 'center', fontSize: 11, color: C.sub }}>
-            Template: {template?.name ?? 'Default'} · {template?.paper_width ?? '58mm'}
-          </div>
-        </div>
-      </Modal>
-    );
-  }
-
-  // ── PAYMENT FORM ──────────────────────────────────────────────────────────
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Pembayaran" size="md">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', fontFamily: "'DM Sans', sans-serif" }}>
-
-        {/* Total */}
+        {/* ── Total ── */}
         <div style={{
           background: 'linear-gradient(135deg, #3d5e3c, #5B8C5A)',
-          borderRadius: '14px', padding: '18px 20px',
+          borderRadius: '14px', padding: '16px 20px',
           boxShadow: '0 4px 16px rgba(91,140,90,0.25)',
           position: 'relative', overflow: 'hidden',
         }}>
-          <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.07)' }} />
-          <p style={{ margin: '0 0 4px', fontSize: '11px', color: 'rgba(255,255,255,0.7)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Total Pembayaran</p>
-          <p style={{ margin: 0, fontSize: '28px', fontWeight: '800', color: 'white', letterSpacing: '-0.02em' }}>{formatCurrency(total)}</p>
+          <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.07)' }}/>
+          {discountAmount > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+              <p style={{ margin: 0, fontSize: '12px', color: 'rgba(255,255,255,0.65)' }}>Subtotal</p>
+              <p style={{ margin: 0, fontSize: '12px', color: 'rgba(255,255,255,0.65)', textDecoration: 'line-through' }}>{formatCurrency(total)}</p>
+            </div>
+          )}
+          {discountAmount > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <p style={{ margin: 0, fontSize: '12px', color: '#ffd580', fontWeight: 700 }}>
+                Diskon {discountType === 'percent' ? `${discountRaw}%` : ''}
+              </p>
+              <p style={{ margin: 0, fontSize: '12px', color: '#ffd580', fontWeight: 700 }}>
+                -{formatCurrency(discountAmount)}
+              </p>
+            </div>
+          )}
+          <p style={{ margin: '0 0 4px', fontSize: '11px', color: 'rgba(255,255,255,0.7)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            {discountAmount > 0 ? 'Total Setelah Diskon' : 'Total Pembayaran'}
+          </p>
+          <p style={{ margin: 0, fontSize: '28px', fontWeight: '800', color: 'white', letterSpacing: '-0.02em' }}>
+            {formatCurrency(finalTotal)}
+          </p>
         </div>
 
-        {/* Customer name */}
+        {/* ── Customer name ── */}
         <div>
           <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: '700', color: C.sub, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
             <UserIcon /> Nama Pelanggan <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(opsional)</span>
@@ -293,7 +238,121 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           />
         </div>
 
-        {/* Payment method */}
+        {/* ── Diskon ── */}
+        <div style={{
+          border: `1.5px solid ${discountEnabled ? C.orange : C.border}`,
+          borderRadius: '12px', overflow: 'hidden',
+          transition: 'border-color .2s',
+        }}>
+          {/* Toggle header */}
+          <div
+            onClick={() => setDiscountEnabled(d => !d)}
+            style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              padding: '11px 14px', cursor: 'pointer',
+              background: discountEnabled ? C.orangeLight : 'white',
+              transition: 'background .2s',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '13px', fontWeight: '700', color: discountEnabled ? '#a06010' : C.sub }}>
+              <TagIcon /> Tambah Diskon
+            </div>
+            {/* Toggle switch */}
+            <div style={{
+              width: 36, height: 20, borderRadius: 10,
+              background: discountEnabled ? C.orange : '#d8d4cc',
+              position: 'relative', transition: 'background .2s', flexShrink: 0,
+            }}>
+              <div style={{
+                width: 16, height: 16, borderRadius: '50%', background: 'white',
+                position: 'absolute', top: 2,
+                left: discountEnabled ? 18 : 2,
+                transition: 'left .2s',
+                boxShadow: '0 1px 4px rgba(0,0,0,.2)',
+              }}/>
+            </div>
+          </div>
+
+          {/* Diskon content */}
+          {discountEnabled && (
+            <div style={{ padding: '12px 14px', borderTop: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {/* Type toggle */}
+              <div style={{ display: 'flex', background: '#f0ede8', borderRadius: 8, padding: 3 }}>
+                {([['percent', 'Persentase (%)'], ['nominal', 'Nominal (Rp)']] as const).map(([type, label]) => (
+                  <button
+                    key={type}
+                    onClick={() => { setDiscountType(type); setDiscountInput(''); }}
+                    style={{
+                      flex: 1, padding: '7px 0', border: 'none', borderRadius: 6, cursor: 'pointer',
+                      fontSize: 12, fontWeight: 700, fontFamily: 'inherit',
+                      background: discountType === type ? 'white' : 'transparent',
+                      color: discountType === type ? C.text : C.sub,
+                      boxShadow: discountType === type ? '0 1px 4px rgba(0,0,0,.1)' : 'none',
+                      transition: 'all .15s',
+                    }}
+                  >{label}</button>
+                ))}
+              </div>
+
+              {/* Input */}
+              <div style={{ position: 'relative' }}>
+                <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 13, fontWeight: 700, color: C.sub }}>
+                  {discountType === 'percent' ? '%' : 'Rp'}
+                </span>
+                <input
+                  type="text" inputMode="numeric"
+                  value={discountInput}
+                  onChange={e => {
+                    const raw = e.target.value.replace(/\D/g, '');
+                    if (discountType === 'percent') {
+                      const n = parseInt(raw || '0');
+                      setDiscountInput(n > 100 ? '100' : raw);
+                    } else {
+                      setDiscountInput(raw.replace(/^0+/, ''));
+                    }
+                  }}
+                  onFocus={() => setDiscountFocused(true)}
+                  onBlur={() => setDiscountFocused(false)}
+                  placeholder={discountType === 'percent' ? '0' : '0'}
+                  style={{
+                    ...inputStyle(discountFocused),
+                    paddingLeft: 36,
+                    borderColor: discountFocused ? C.orange : C.border,
+                    boxShadow: discountFocused ? '0 0 0 3px rgba(232,162,58,.12)' : 'none',
+                  }}
+                />
+              </div>
+
+              {/* Quick percent buttons */}
+              {discountType === 'percent' && (
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {[5, 10, 15, 20, 25, 50].map(p => (
+                    <button key={p} onClick={() => setDiscountInput(String(p))} style={{
+                      flex: 1, padding: '6px 0', borderRadius: 7, border: `1.5px solid ${discountInput === String(p) ? C.orange : C.border}`,
+                      background: discountInput === String(p) ? C.orangeLight : 'white',
+                      fontSize: 11, fontWeight: 700, color: discountInput === String(p) ? '#a06010' : C.sub,
+                      cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
+                    }}>{p}%</button>
+                  ))}
+                </div>
+              )}
+
+              {/* Preview diskon */}
+              {discountAmount > 0 && (
+                <div style={{
+                  background: C.orangeLight, borderRadius: 9, padding: '9px 12px',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  border: `1px solid rgba(232,162,58,.25)`,
+                }}>
+                  <span style={{ fontSize: 12, color: '#a06010', fontWeight: 600 }}>Hemat</span>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: '#a06010' }}>-{formatCurrency(discountAmount)}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ── Payment method ── */}
         <div>
           <label style={{ fontSize: '11px', fontWeight: '700', color: C.sub, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '8px' }}>
             Metode Pembayaran
@@ -303,7 +362,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               const active = selectedMethod === method.value;
               return (
                 <button key={method.value} onClick={() => setSelectedMethod(method.value)} style={{
-                  padding: '12px 8px', borderRadius: '12px', border: `2px solid ${active ? C.primary : C.border}`,
+                  padding: '12px 8px', borderRadius: '12px',
+                  border: `2px solid ${active ? C.primary : C.border}`,
                   background: active ? C.primaryLight : 'white', cursor: 'pointer',
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
                   color: active ? C.primaryDark : C.sub, transition: 'all 0.2s',
@@ -312,18 +372,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 }}>
                   <div style={{ color: active ? C.primary : C.sub }}>{METHOD_ICONS[method.value] || <CashIcon />}</div>
                   <span style={{ fontSize: '12px', fontWeight: '700' }}>{method.label}</span>
-                  {active && (
-                    <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: C.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-                      <CheckIcon />
-                    </div>
-                  )}
+                  {active && <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: C.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}><CheckIcon /></div>}
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Cash detail */}
+        {/* ── Cash detail ── */}
         {selectedMethod === 'cash' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
@@ -366,13 +422,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   </button>
                 ))}
               </div>
-              <button onClick={() => setCashInput(String(total))} style={{
+              <button onClick={() => setCashInput(String(Math.ceil(finalTotal)))} style={{
                 width: '100%', marginTop: '6px', padding: '8px', borderRadius: '9px',
                 border: `1.5px dashed ${C.primary}`, background: C.primaryLight,
                 cursor: 'pointer', fontSize: '12px', fontWeight: '700', color: C.primary,
                 fontFamily: "'DM Sans', sans-serif",
               }}>
-                Uang Pas {formatCurrency(total)}
+                Uang Pas {formatCurrency(finalTotal)}
               </button>
             </div>
 
@@ -397,7 +453,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         {selectedMethod === 'qris' && (
           <div style={{ background: C.primaryLight, borderRadius: '12px', padding: '20px', textAlign: 'center', border: `1.5px solid rgba(91,140,90,0.2)` }}>
             <p style={{ margin: '0 0 12px', fontSize: '13px', color: C.primaryDark, fontWeight: '600' }}>Scan QRIS untuk membayar</p>
-            <div style={{ background: 'white', borderRadius: '10px', padding: '16px', display: 'inline-block', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+            <div style={{ background: 'white', borderRadius: '10px', padding: '16px', display: 'inline-block' }}>
               <div style={{ width: '120px', height: '120px', background: '#f0ede8', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.sub, fontSize: '12px' }}>QR Code</div>
             </div>
           </div>
@@ -409,7 +465,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           </div>
         )}
 
-        {/* Actions */}
+        {/* ── Actions ── */}
         <div style={{ display: 'flex', gap: '10px' }}>
           <button onClick={onClose} style={{
             flex: 1, padding: '12px', borderRadius: '11px', border: `1.5px solid ${C.border}`,

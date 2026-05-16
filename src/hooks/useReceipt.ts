@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { ReceiptTemplate, Order, Tenant } from '../types';
 import { reportApi } from '../api/report';
+import { settingsApi } from '../api/ingredient';
 
 export const useReceipt = () => {
   const [defaultTemplate, setDefaultTemplate] = useState<ReceiptTemplate | null>(null);
+  const [taxRate, setTaxRate] = useState(0);
 
   useEffect(() => {
     reportApi.getTemplates()
@@ -11,6 +13,10 @@ export const useReceipt = () => {
         const list: ReceiptTemplate[] = Array.isArray(res) ? res : res.data ?? [];
         setDefaultTemplate(list.find(t => t.is_default) ?? list[0] ?? null);
       })
+      .catch(() => {});
+
+    settingsApi.get()
+      .then(s => setTaxRate(s.tax_rate ?? 0))
       .catch(() => {});
   }, []);
 
@@ -23,30 +29,37 @@ export const useReceipt = () => {
     const t          = template ?? defaultTemplate;
     const paperWidth = t?.paper_width ?? '58mm';
     const widthPx    = paperWidth === '58mm' ? '210px' : '290px';
-    const fontSize   = t?.font_size   ?? 12;
-    const marginTop  = (t?.margin_top    ?? 0) * 4;
+    const fontSize   = t?.font_size ?? 12;
+    const marginTop  = (t?.margin_top ?? 0) * 4;
     const marginBot  = (t?.margin_bottom ?? 0) * 4;
     const logoPos    = t?.logo_position ?? 'center';
+    const logoAlign  = logoPos === 'left' ? 'left' : logoPos === 'right' ? 'right' : 'center';
 
     const fmt = (n: number) =>
       new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
 
-    const tax      = t?.show_tax ? order.total_amount * 0.1 : 0;
-    const grand    = order.total_amount + tax;
-    const change   = cashAmount != null ? cashAmount - grand : null;
+    const discount     = (order as any).discount_amount ?? 0;
+    const discountType = (order as any).discount_type ?? '';
+    const subtotalBeforeDiscount = discount > 0 ? order.total_amount + discount : order.total_amount;
+    const effectiveTaxRate = t?.show_tax ? (taxRate > 0 ? taxRate : 0) : 0;
+    const taxAmount    = order.total_amount * (effectiveTaxRate / 100);
+    const grand        = order.total_amount + taxAmount;
+    const change       = cashAmount != null ? cashAmount - grand : null;
 
     const itemsHtml = (order.items ?? []).map(item => `
       <div style="margin-bottom:5px">
-        <div>${item.menu_name ?? (item as any).menu?.name ?? ''}${
-          t?.show_variations && (item.variation_name ?? (item as any).variation?.option)
+        <div style="font-weight:normal">${item.menu_name ?? (item as any).menu?.name ?? ''}${
+          t?.show_variations !== false && (item.variation_name ?? (item as any).variation?.option)
             ? ` (${item.variation_name ?? (item as any).variation?.option})`
             : ''
         }</div>
-        <div style="display:flex;justify-content:space-between;color:#555">
+        <div style="display:flex;justify-content:space-between;color:#555;font-size:${fontSize - 1}px">
           <span>${item.quantity} x ${fmt(item.price)}</span>
           <span>${fmt(item.subtotal)}</span>
         </div>
-        ${t?.show_notes && item.notes ? `<div style="color:#888;font-style:italic;font-size:${fontSize - 2}px">* ${item.notes}</div>` : ''}
+        ${t?.show_notes !== false && item.notes
+          ? `<div style="color:#888;font-style:italic;font-size:${fontSize - 2}px">* ${item.notes}</div>`
+          : ''}
       </div>
     `).join('');
 
@@ -62,38 +75,36 @@ export const useReceipt = () => {
     font-size: ${fontSize}px;
     width: ${widthPx};
     margin: 0 auto;
-    padding: ${marginTop}px 8px ${marginBot}px;
+    padding: ${marginTop}px 10px ${marginBot + 20}px;
     color: #111;
   }
-  .row   { display: flex; justify-content: space-between; }
-  .bold  { font-weight: bold; }
-  .small { font-size: ${fontSize - 1}px; }
-  .muted { color: #555; }
-  .divider { border-top: 1px dashed #666; margin: 5px 0; }
+  .row { display: flex; justify-content: space-between; margin-bottom: 2px; }
+  .bold { font-weight: bold; }
   .center { text-align: center; }
-  .${logoPos} { text-align: ${logoPos}; }
-  img.logo { max-height: 48px; max-width: 100%; }
+  .divider { border: none; border-top: 1px dashed #888; margin: 6px 0; }
+  img.logo { max-height: 52px; max-width: 90%; }
   @media print {
-    body { margin: 0; }
-    @page { size: ${paperWidth} auto; margin: 0mm; }
+    html, body { width: ${widthPx}; }
+    body { margin: 0; padding: ${marginTop}px 10px ${marginBot + 20}px; }
+    @page { size: ${paperWidth} auto; margin: 0; }
   }
 </style>
 </head>
 <body>
 
-${t?.show_logo ? `
-<div class="${logoPos}" style="margin-bottom:5px">
+${t?.show_logo !== false ? `
+<div style="text-align:${logoAlign};margin-bottom:6px">
   ${tenant?.logo_url
     ? `<img class="logo" src="${tenant.logo_url}" alt="logo">`
-    : `<div class="bold" style="font-size:${fontSize + 2}px">${tenant?.store_name ?? 'Kasir'}</div>`
+    : `<div class="bold" style="font-size:${fontSize + 3}px">${tenant?.store_name ?? 'Kasir'}</div>`
   }
-</div>` : `<div class="bold center" style="margin-bottom:5px;font-size:${fontSize + 2}px">${tenant?.store_name ?? 'Kasir'}</div>`}
+</div>` : `<div class="bold center" style="font-size:${fontSize + 3}px;margin-bottom:6px">${tenant?.store_name ?? 'Kasir'}</div>`}
 
-${t?.header ? `<div class="center small" style="white-space:pre-line;margin-bottom:5px">${t.header}</div>` : ''}
+${t?.header ? `<div class="center" style="font-size:${fontSize - 1}px;white-space:pre-line;margin-bottom:6px">${t.header}</div>` : ''}
 
-<div class="divider"></div>
+<hr class="divider">
 
-<div class="small" style="margin-bottom:5px">
+<div style="font-size:${fontSize - 1}px;margin-bottom:4px">
   <div class="row"><span>No</span><span>${order.order_number.slice(-10)}</span></div>
   <div class="row"><span>Tgl</span><span>${new Date(order.created_at).toLocaleDateString('id-ID')}</span></div>
   <div class="row"><span>Jam</span><span>${new Date(order.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span></div>
@@ -102,32 +113,38 @@ ${t?.header ? `<div class="center small" style="white-space:pre-line;margin-bott
   <div class="row"><span>Bayar</span><span>${order.payment_method.toUpperCase()}</span></div>
 </div>
 
-<div class="divider"></div>
+<hr class="divider">
 
-<div class="small" style="margin-bottom:5px">${itemsHtml}</div>
+<div style="margin-bottom:4px">${itemsHtml}</div>
 
-<div class="divider"></div>
+<hr class="divider">
 
-<div class="small">
-  ${t?.show_tax ? `
-  <div class="row muted"><span>Subtotal</span><span>${fmt(order.total_amount)}</span></div>
-  <div class="row muted"><span>Pajak (10%)</span><span>${fmt(tax)}</span></div>
+<div style="font-size:${fontSize - 1}px">
+  ${discount > 0 && t?.show_discount !== false ? `
+  <div class="row"><span>Subtotal</span><span>${fmt(subtotalBeforeDiscount)}</span></div>
+  <div class="row" style="color:#a06010"><span>Diskon${discountType === 'percent' ? '' : ''}</span><span>-${fmt(discount)}</span></div>
   ` : ''}
-  <div class="row bold"><span>TOTAL</span><span>${fmt(grand)}</span></div>
+  ${effectiveTaxRate > 0 ? `
+  <div class="row" style="color:#555"><span>Subtotal</span><span>${fmt(order.total_amount)}</span></div>
+  <div class="row" style="color:#555"><span>Pajak (${effectiveTaxRate}%)</span><span>${fmt(taxAmount)}</span></div>
+  ` : ''}
+  <div class="row bold" style="font-size:${fontSize + 1}px;margin-top:3px;padding-top:3px;border-top:1px solid #333">
+    <span>TOTAL</span><span>${fmt(grand)}</span>
+  </div>
   ${cashAmount != null ? `
   <div class="row"><span>Tunai</span><span>${fmt(cashAmount)}</span></div>
   <div class="row"><span>Kembali</span><span>${fmt(Math.max(0, change ?? 0))}</span></div>
   ` : ''}
 </div>
 
-<div class="divider"></div>
+<hr class="divider">
 
-<div class="center small" style="white-space:pre-line">${t?.footer ?? 'Terima kasih!'}</div>
+<div class="center" style="font-size:${fontSize - 1}px;white-space:pre-line;padding-bottom:16px">${t?.footer ?? 'Terima kasih!'}</div>
 
 </body>
 </html>`;
 
-    const win = window.open('', '_blank', `width=350,height=600,toolbar=0,menubar=0,location=0`);
+    const win = window.open('', '_blank', `width=380,height=650,toolbar=0,menubar=0,location=0,scrollbars=1`);
     if (!win) {
       alert('Popup diblokir. Izinkan popup di browser untuk mencetak.');
       return;
@@ -136,10 +153,12 @@ ${t?.header ? `<div class="center small" style="white-space:pre-line;margin-bott
     win.document.close();
     win.onload = () => {
       win.focus();
-      win.print();
-      setTimeout(() => win.close(), 800);
+      setTimeout(() => {
+        win.print();
+        setTimeout(() => win.close(), 1000);
+      }, 300);
     };
   };
 
-  return { defaultTemplate, printReceipt };
+  return { defaultTemplate, taxRate, printReceipt };
 };

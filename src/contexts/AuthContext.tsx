@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { User, Tenant } from '../types';
+import { User, Tenant, StoreSettings } from '../types';
 import { authApi } from '../api/auth';
+import { settingsApi } from '../api/ingredient';
 
 interface AuthContextType {
   user: User | null;
@@ -10,6 +11,8 @@ interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  enhancedMode: boolean;
+  refreshSettings: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,10 +21,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [enhancedMode, setEnhancedMode] = useState(false);
 
-  useEffect(() => {
-    loadUser();
-  }, []);
+  useEffect(() => { loadUser(); }, []);
+
+  const loadSettings = async () => {
+    try {
+      const s: StoreSettings = await settingsApi.get();
+      setEnhancedMode(s.enhanced_mode ?? false);
+    } catch {
+      // settings gagal load — tidak masalah, default false
+    }
+  };
 
   const loadUser = async () => {
     try {
@@ -30,6 +41,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(currentUser);
         const profile = await authApi.getTenantProfile();
         setTenant(profile);
+        // Load enhanced mode setelah auth berhasil
+        await loadSettings();
       }
     } catch (error) {
       console.error('Failed to load user:', error);
@@ -45,6 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(response.user);
       const profile = await authApi.getTenantProfile();
       setTenant(profile);
+      await loadSettings();
     } finally {
       setIsLoading(false);
     }
@@ -54,6 +68,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     authApi.logout();
     setUser(null);
     setTenant(null);
+    setEnhancedMode(false);
+  };
+
+  const refreshSettings = async () => {
+    await loadSettings();
   };
 
   const value = {
@@ -64,6 +83,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin',
+    enhancedMode,
+    refreshSettings,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

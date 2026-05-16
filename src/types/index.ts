@@ -31,7 +31,6 @@ export interface RegisterData {
   admin_email: string;
   password: string;
   license_key: string;
-
 }
 
 export interface AuthResponse {
@@ -86,6 +85,32 @@ export interface MenuFormData {
   variations: Omit<MenuVariation, 'id'>[];
 }
 
+// Promo Types
+export interface PromoItem {
+  menu_id: number;
+  variation_id?: number | null;
+  // addon_mode: "" = no variation, "fixed" = locked by admin, "dynamic" = customer picks
+  addon_mode?: string;
+  quantity: number;
+  menu?: Menu;
+  variation?: MenuVariation;
+}
+
+export interface Promo {
+  id: number;
+  name: string;
+  description: string;
+  promo_price: number;
+  image_url: string;
+  is_active: boolean;
+  start_at: string;
+  end_at: string | null;
+  start_time: string;
+  end_time: string;
+  unavailable_reason?: string; // kosong = tersedia, ada isi = tidak bisa di-checkout
+  items: PromoItem[];
+}
+
 // Order Types
 export interface CartItem {
   menu_id: number;
@@ -96,6 +121,9 @@ export interface CartItem {
   variation_name?: string;
   notes?: string;
   subtotal: number;
+  is_promo?: boolean;
+  promo_id?: number;
+  promo_items?: PromoItem[]; // items dengan variation yang sudah dipilih
 }
 
 export interface Order {
@@ -124,6 +152,8 @@ export interface OrderRequest {
   customer_name?: string;
   payment_method: string;
   notes?: string;
+  discount_type?: 'percent' | 'nominal';
+  discount_amount?: number;
   items: {
     menu_id: number;
     variation_id?: number;
@@ -195,4 +225,54 @@ export interface StoreSettings {
   currency: string;
   receipt_header?: string;
   receipt_footer?: string;
+  enhanced_mode: boolean;
+  low_stock_alert: number;
+}
+
+// Inventory Types
+export interface Ingredient {
+  id: number;
+  tenant_id: number;
+  name: string;
+  unit: string;
+  stock: number;
+  cost_per_unit: number;
+  low_stock_at: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MenuIngredient {
+  id: number;
+  menu_id: number;
+  ingredient_id: number;
+  amount: number;
+  ingredient: Ingredient;
+}
+
+// Margins Types
+export interface MarginSummary {
+  total_revenue: number;
+  total_cogs: number;
+  net_profit: number;
+  margin_pct: number;
+  days: number;
+}
+
+export interface MenuMargin {
+  menu_id: number;
+  menu_name: string;
+  qty_sold: number;
+  revenue: number;
+  cogs: number;
+  profit: number;
+  margin_pct: number;
+}
+
+export interface VariationIngredient {
+  id: number;
+  variation_id: number;
+  ingredient_id: number;
+  amount: number;
+  ingredient: Ingredient;
 }

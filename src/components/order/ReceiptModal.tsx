@@ -10,7 +10,6 @@ interface ReceiptModalProps {
   order: Order | null;
   template?: ReceiptTemplate | null;
   tenant?: Tenant | null;
-  // legacy props (tetap support untuk backward compat)
   storeName?: string;
   logoUrl?: string;
   cashAmount?: number;
@@ -28,126 +27,172 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   isOpen, onClose, order, template, tenant,
   storeName, logoUrl, cashAmount,
 }) => {
-  const { printReceipt } = useReceipt();
+  const { printReceipt, taxRate } = useReceipt();
 
   if (!order) return null;
 
-  // Merge legacy props ke tenant object kalau tenant tidak dipass
   const resolvedTenant = tenant ?? (storeName || logoUrl
     ? { store_name: storeName, logo_url: logoUrl } as any
     : null);
 
-  const change = cashAmount ? cashAmount - order.total_amount : 0;
   const paperWidth = template?.paper_width ?? '58mm';
-  const maxWidth   = paperWidth === '58mm' ? '220px' : '300px';
+  const maxWidth   = paperWidth === '58mm' ? '230px' : '300px';
   const fontSize   = template?.font_size ?? 12;
   const logoPos    = template?.logo_position ?? 'center';
-  const logoAlign  = logoPos === 'left' ? 'left' : logoPos === 'right' ? 'right' : 'center';
+  const logoAlign  = logoPos === 'left' ? 'left' as const : logoPos === 'right' ? 'right' as const : 'center' as const;
+  const showLogo   = template?.show_logo !== false;
 
-  const handlePrint = () => {
-    printReceipt(order, resolvedTenant, template ?? null, cashAmount);
-  };
+  const discount      = (order as any).discount_amount ?? 0;
+  const discountType  = (order as any).discount_type ?? '';
+  const subtotalBefore = discount > 0 ? order.total_amount + discount : order.total_amount;
+  const effectiveTax  = template?.show_tax ? (taxRate > 0 ? taxRate : 0) : 0;
+  const taxAmount     = order.total_amount * (effectiveTax / 100);
+  const grand         = order.total_amount + taxAmount;
+  const change        = cashAmount != null ? cashAmount - grand : null;
 
   const paymentLabels: Record<string, string> = {
     cash: 'Tunai', qris: 'QRIS', transfer: 'Transfer',
   };
+
+  const Row = ({ label, value, bold, color }: { label: string; value: string; bold?: boolean; color?: string }) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', fontWeight: bold ? 700 : 400, color: color ?? 'inherit' }}>
+      <span>{label}</span><span>{value}</span>
+    </div>
+  );
+
+  const Divider = () => (
+    <div style={{ borderTop: '1px dashed #aaa', margin: '5px 0' }} />
+  );
+
+  const handlePrint = () => printReceipt(order, resolvedTenant, template ?? null, cashAmount);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Nota Transaksi" size="sm">
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', fontFamily: "'DM Sans', sans-serif" }}>
 
         {/* Receipt preview */}
-        <div style={{ background: '#f5f5f0', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'center', overflowY: 'auto', maxHeight: '60vh' }}>
+        <div style={{
+          background: '#f0ede8', borderRadius: '12px', padding: '16px',
+          display: 'flex', justifyContent: 'center',
+          maxHeight: '62vh', overflowY: 'auto',
+          overflowX: 'hidden',
+        }}>
           <div style={{
-            background: 'white',
-            width: maxWidth,
+            background: 'white', width: maxWidth,
             fontFamily: "'Courier New', monospace",
-            fontSize: `${fontSize}px`,
-            color: '#111',
-            padding: `${(template?.margin_top ?? 0) * 4}px 12px ${(template?.margin_bottom ?? 0) * 4}px`,
-            boxShadow: '0 2px 12px rgba(0,0,0,.1)',
+            fontSize: `${fontSize}px`, color: '#111',
+            padding: `${(template?.margin_top ?? 0) * 4 + 12}px 12px ${(template?.margin_bottom ?? 0) * 4 + 32}px`,
+            boxShadow: '0 4px 20px rgba(0,0,0,.12)',
+            minHeight: 'fit-content',
           }}>
 
-            {/* Logo / Nama toko */}
-            {(template?.show_logo !== false) && (
-              <div style={{ textAlign: logoAlign, marginBottom: 4 }}>
+            {/* Logo / Store name */}
+            {showLogo && (
+              <div style={{ textAlign: logoAlign, marginBottom: 6 }}>
                 {resolvedTenant?.logo_url
-                  ? <img src={resolvedTenant.logo_url} alt="logo" style={{ maxHeight: 48, display: 'inline-block' }}/>
-                  : <div style={{ fontWeight: 700, fontSize: fontSize + 2 }}>{resolvedTenant?.store_name ?? 'Kasir'}</div>
+                  ? <img src={resolvedTenant.logo_url} alt="logo"
+                      style={{ maxHeight: 52, maxWidth: '90%', display: 'inline-block' }} />
+                  : <div style={{ fontWeight: 700, fontSize: fontSize + 3 }}>
+                      {resolvedTenant?.store_name ?? 'Kasir'}
+                    </div>
                 }
+              </div>
+            )}
+            {!showLogo && (
+              <div style={{ textAlign: 'center', fontWeight: 700, fontSize: fontSize + 3, marginBottom: 6 }}>
+                {resolvedTenant?.store_name ?? 'Kasir'}
               </div>
             )}
 
             {/* Header */}
             {template?.header && (
-              <div style={{ textAlign: 'center', fontSize: fontSize - 1, whiteSpace: 'pre-line', marginBottom: 4 }}>
+              <div style={{ textAlign: 'center', fontSize: fontSize - 1, whiteSpace: 'pre-line', marginBottom: 5 }}>
                 {template.header}
               </div>
             )}
 
-            <div style={{ borderTop: '1px dashed #aaa', margin: '5px 0' }}/>
+            <Divider />
 
-            {/* Info order */}
+            {/* Order info */}
             <div style={{ fontSize: fontSize - 1, marginBottom: 4 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>No</span><span>{order.order_number.slice(-10)}</span></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Tgl</span><span>{new Date(order.created_at).toLocaleDateString('id-ID')}</span></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Jam</span><span>{new Date(order.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span></div>
+              <Row label="No" value={order.order_number.slice(-10)} />
+              <Row label="Tgl" value={new Date(order.created_at).toLocaleDateString('id-ID')} />
+              <Row label="Jam" value={new Date(order.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} />
               {order.customer_name && order.customer_name !== 'Walk-in Customer' && (
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Pelanggan</span><span>{order.customer_name}</span></div>
+                <Row label="Pelanggan" value={order.customer_name} />
               )}
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Bayar</span><span>{paymentLabels[order.payment_method] ?? order.payment_method}</span></div>
+              <Row label="Bayar" value={paymentLabels[order.payment_method] ?? order.payment_method} />
             </div>
 
-            <div style={{ borderTop: '1px dashed #aaa', margin: '5px 0' }}/>
+            <Divider />
 
             {/* Items */}
             <div style={{ marginBottom: 4 }}>
               {(order.items ?? []).map((item: any, i: number) => (
-                <div key={i} style={{ marginBottom: 4, fontSize: fontSize - 1 }}>
-                  <div>{item.menu_name ?? item.menu?.name ?? ''}
-                    {(template?.show_variations !== false) && (item.variation_name ?? item.variation?.option)
+                <div key={i} style={{ marginBottom: 5, fontSize: fontSize - 1 }}>
+                  <div>
+                    {item.menu_name ?? item.menu?.name ?? ''}
+                    {template?.show_variations !== false && (item.variation_name ?? item.variation?.option)
                       ? ` (${item.variation_name ?? item.variation?.option})` : ''}
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', color: '#555' }}>
                     <span>{item.quantity} x {formatCurrency(item.price)}</span>
                     <span>{formatCurrency(item.subtotal)}</span>
                   </div>
-                  {(template?.show_notes !== false) && item.notes && (
-                    <div style={{ color: '#888', fontStyle: 'italic', fontSize: fontSize - 2 }}>* {item.notes}</div>
+                  {template?.show_notes !== false && item.notes && (
+                    <div style={{ color: '#888', fontStyle: 'italic', fontSize: fontSize - 2 }}>
+                      * {item.notes}
+                    </div>
                   )}
                 </div>
               ))}
             </div>
 
-            <div style={{ borderTop: '1px dashed #aaa', margin: '5px 0' }}/>
+            <Divider />
 
-            {/* Total */}
+            {/* Totals */}
             <div style={{ fontSize: fontSize - 1 }}>
-              {template?.show_tax && (
+              {/* Diskon */}
+              {discount > 0 && template?.show_discount !== false && (
                 <>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#555' }}><span>Subtotal</span><span>{formatCurrency(order.total_amount)}</span></div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#555' }}><span>Pajak (10%)</span><span>{formatCurrency(order.total_amount * 0.1)}</span></div>
+                  <Row label="Subtotal" value={formatCurrency(subtotalBefore)} />
+                  <Row
+                    label={`Diskon${discountType === 'percent' ? '' : ''}`}
+                    value={`-${formatCurrency(discount)}`}
+                    color="#a06010"
+                  />
                 </>
               )}
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
+              {/* Pajak */}
+              {effectiveTax > 0 && (
+                <>
+                  <Row label="Subtotal" value={formatCurrency(order.total_amount)} color="#555" />
+                  <Row label={`Pajak (${effectiveTax}%)`} value={formatCurrency(taxAmount)} color="#555" />
+                </>
+              )}
+              {/* Total */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: fontSize + 1, marginTop: 4, paddingTop: 4, borderTop: '1px solid #333' }}>
                 <span>TOTAL</span>
-                <span>{formatCurrency(template?.show_tax ? order.total_amount * 1.1 : order.total_amount)}</span>
+                <span>{formatCurrency(grand)}</span>
               </div>
+              {/* Tunai & Kembalian */}
               {cashAmount != null && (
                 <>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Tunai</span><span>{formatCurrency(cashAmount)}</span></div>
-                  {order.payment_method === 'cash' && change >= 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Kembali</span><span>{formatCurrency(change)}</span></div>
+                  <Row label="Tunai" value={formatCurrency(cashAmount)} />
+                  {order.payment_method === 'cash' && change != null && (
+                    <Row label="Kembali" value={formatCurrency(Math.max(0, change))} />
                   )}
                 </>
               )}
             </div>
 
+            <Divider />
+
             {/* Footer */}
-            <div style={{ borderTop: '1px dashed #aaa', margin: '5px 0' }}/>
-            <div style={{ textAlign: 'center', fontSize: fontSize - 1, whiteSpace: 'pre-line' }}>
+            <div style={{ textAlign: 'center', fontSize: fontSize - 1, whiteSpace: 'pre-line', paddingBottom: 8 }}>
               {template?.footer ?? 'Terima kasih!'}
             </div>
+
           </div>
         </div>
 
@@ -159,7 +204,6 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             color: '#8a8278', cursor: 'pointer', fontSize: '13px', fontWeight: '700',
             fontFamily: "'DM Sans', sans-serif",
           }}>Tutup</button>
-
           <button onClick={handlePrint} style={{
             flex: 2, padding: '11px', borderRadius: '10px', border: 'none',
             background: 'linear-gradient(135deg, #217093, #4eb8dd)',
@@ -172,9 +216,9 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           </button>
         </div>
 
-        {/* Info template */}
-        <div style={{ textAlign: 'center', fontSize: 11, color: '#aaa' }}>
+        <div style={{ textAlign: 'center', fontSize: 11, color: '#bbb' }}>
           {template?.name ?? 'Template default'} · {paperWidth}
+          {effectiveTax > 0 ? ` · Pajak ${effectiveTax}%` : ''}
         </div>
       </div>
     </Modal>

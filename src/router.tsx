@@ -10,6 +10,9 @@ import { Settings } from './pages/Settings';
 import { NotFound } from './pages/NotFound';
 import { History } from './pages/History';
 import { PublicMenu } from './pages/PublicMenu';
+import { PromoManagement } from './pages/PromoManagement';
+import { Stock } from './pages/Stock';
+import { Margins } from './pages/Margins';
 
 export const router = createBrowserRouter([
   {
@@ -28,7 +31,10 @@ export const router = createBrowserRouter([
       { path: 'order',     element: <Order /> },
       { path: 'reports',   element: <Report /> },
       { path: 'settings',  element: <Settings /> },
-      { path: 'history', element: <History /> },
+      { path: 'history',   element: <History /> },
+      { path: 'promos',    element: <PromoManagement /> },
+      { path: 'stock',     element: <Stock /> },
+      { path: 'margins',   element: <Margins /> },
       { path: '*',         element: <NotFound /> },
     ],
   },
