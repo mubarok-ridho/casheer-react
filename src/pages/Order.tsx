@@ -14,7 +14,7 @@ import { ReceiptModal } from '../components/order/ReceiptModal';
 import toast from 'react-hot-toast';
 import { formatCurrency } from '../utils/format';
 
-// ── SVG Icons ──────────────────────────────────────────────────────────────────
+// ── SVG Icons (sama seperti sebelumnya, tidak diubah) ──
 const SearchIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
@@ -81,8 +81,18 @@ const FireIcon = () => (
     <path d="M12 2c0 0-4 5-4 9 0 2.21 1.79 4 4 4s4-1.79 4-4C16 7 12 2 12 2zm0 13c-1.1 0-2-.9-2-2 0-1.5 1-3.5 2-5 1 1.5 2 3.5 2 5 0 1.1-.9 2-2 2z" />
   </svg>
 );
+const ChevronUpIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="18 15 12 9 6 15" />
+  </svg>
+);
+const ChevronDownIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
 
-// ── Design tokens ──────────────────────────────────────────────────────────────
+// ── Design tokens ──
 const C = {
   bg: '#f4f0e8',
   card: '#ffffff',
@@ -101,7 +111,7 @@ const C = {
   orangeLight: '#fff3ee',
 };
 
-// ── Menu Card ──────────────────────────────────────────────────────────────────
+// ── Menu Card (tidak diubah) ──
 const MenuCard: React.FC<{ menu: Menu; onClick: () => void }> = ({ menu, onClick }) => {
   const [hovered, setHovered] = useState(false);
   return (
@@ -112,7 +122,6 @@ const MenuCard: React.FC<{ menu: Menu; onClick: () => void }> = ({ menu, onClick
       className="menu-card"
       data-hovered={hovered}
     >
-      {/* Image area */}
       <div className="menu-card-img-wrap">
         {menu.images?.[0] ? (
           <img
@@ -124,28 +133,20 @@ const MenuCard: React.FC<{ menu: Menu; onClick: () => void }> = ({ menu, onClick
         ) : (
           <div className="menu-card-img-placeholder">🍽️</div>
         )}
-
-        {/* Variation badge */}
         {menu.variations && menu.variations.length > 0 && (
           <div className="menu-card-variation-badge">
             <TagIcon />
             <span>{menu.variations.length} variasi</span>
           </div>
         )}
-
-        {/* Add button that appears on hover */}
         <div className="menu-card-add-btn" style={{
           opacity: hovered ? 1 : 0,
           transform: hovered ? 'scale(1) translateY(0)' : 'scale(0.7) translateY(4px)',
         }}>
           <PlusIcon />
         </div>
-
-        {/* Gradient overlay bottom */}
         <div className="menu-card-gradient" />
       </div>
-
-      {/* Info */}
       <div className="menu-card-body">
         <p className="menu-card-name">{menu.name}</p>
         {menu.description && (
@@ -153,22 +154,19 @@ const MenuCard: React.FC<{ menu: Menu; onClick: () => void }> = ({ menu, onClick
         )}
         <p className="menu-card-price">{formatCurrency(menu.base_price)}</p>
       </div>
-
-      {/* Active border glow */}
       <div className="menu-card-border" style={{ opacity: hovered ? 1 : 0 }} />
     </button>
   );
 };
 
-// ── Category pill ──────────────────────────────────────────────────────────────
+// ── Category pill (tidak diubah) ──
 const CategoryPill: React.FC<{ label: string; active: boolean; onClick: () => void }> = ({ label, active, onClick }) => (
   <button onClick={onClick} className={`cat-pill ${active ? 'cat-pill--active' : ''}`}>
     {label}
   </button>
 );
 
-// ── Promo Card ─────────────────────────────────────────────────────────────────
-// ── Promo Card ─────────────────────────────────────────────────────────────────
+// ── Promo Card (tidak diubah) ──
 const PromoCard: React.FC<{ promo: Promo; onAdd: () => void }> = ({ promo, onAdd }) => {
   const [hovered, setHovered] = useState(false);
   const originalTotal = promo.items?.reduce((s, i) => {
@@ -192,15 +190,12 @@ const PromoCard: React.FC<{ promo: Promo; onAdd: () => void }> = ({ promo, onAdd
       data-hovered={hovered}
       style={{ cursor: isUnavailable ? 'not-allowed' : 'pointer', opacity: isUnavailable ? 0.82 : 1 }}
     >
-      {/* Gradient header */}
       <div className="promo-card-header">
         {promo.image_url
           ? <img src={promo.image_url} alt={promo.name} className="promo-card-img" />
           : <div className="promo-card-emoji">🎁</div>
         }
         <div className="promo-card-overlay" />
-
-        {/* Unavailable overlay */}
         {isUnavailable && (
           <div style={{
             position: 'absolute', inset: 0, zIndex: 3,
@@ -219,7 +214,6 @@ const PromoCard: React.FC<{ promo: Promo; onAdd: () => void }> = ({ promo, onAdd
             </div>
           </div>
         )}
-
         {savingsPct > 0 && (
           <div className="promo-savings-badge">
             <SparkleIcon />
@@ -234,8 +228,6 @@ const PromoCard: React.FC<{ promo: Promo; onAdd: () => void }> = ({ promo, onAdd
           <PlusIcon />
         </div>
       </div>
-
-      {/* Info */}
       <div className="promo-card-body">
         <p className="promo-card-name">{promo.name}</p>
         <div className="promo-card-items">
@@ -257,25 +249,20 @@ const PromoCard: React.FC<{ promo: Promo; onAdd: () => void }> = ({ promo, onAdd
   );
 };
 
-// ── Promo Variation Modal ─────────────────────────────────────────────────────
-// Muncul ketika promo mengandung menu yang punya variasi
+// ── Promo Variation Modal (tidak diubah, hanya tambah style mobile) ──
 const PromoVariationModal: React.FC<{
   promo: Promo;
   onConfirm: (selectedItems: any[]) => void;
   onClose: () => void;
 }> = ({ promo, onConfirm, onClose }) => {
-  // selectedVariations: map menu_id -> variation_id (null = tidak ada variasi / sudah ok)
   const [selectedVariations, setSelectedVariations] = React.useState<Record<number, number | null>>(() => {
     const init: Record<number, number | null> = {};
     promo.items?.forEach(pi => {
       if (pi.addon_mode === 'dynamic') {
-        // Dynamic: customer harus pilih
         init[pi.menu_id] = -1;
       } else if (pi.addon_mode === 'fixed' && pi.variation_id) {
-        // Fixed: sudah dikunci admin
         init[pi.menu_id] = pi.variation_id;
       } else {
-        // No variation
         init[pi.menu_id] = null;
       }
     });
@@ -283,7 +270,6 @@ const PromoVariationModal: React.FC<{
   });
 
   const allSelected = Object.values(selectedVariations).every(v => v !== -1);
-  // Hanya items dengan addon_mode 'dynamic' yang perlu dipilih customer
   const dynamicItems = promo.items?.filter(pi => pi.addon_mode === 'dynamic') ?? [];
   const hasAnyVariation = dynamicItems.length > 0;
 
@@ -292,17 +278,15 @@ const PromoVariationModal: React.FC<{
       toast.error('Pilih variasi untuk semua menu yang memiliki variasi');
       return;
     }
-    // Build selectedItems: fixed pakai variation dari promo, dynamic pakai pilihan customer
     const selectedItems = promo.items?.map(pi => ({
       ...pi,
       variation_id: pi.addon_mode === 'fixed' 
-        ? pi.variation_id  // sudah dikunci admin
-        : (selectedVariations[pi.menu_id] ?? undefined),  // pilihan customer
+        ? pi.variation_id
+        : (selectedVariations[pi.menu_id] ?? undefined),
     })) ?? [];
     onConfirm(selectedItems);
   };
 
-  // Kalau tidak ada menu dengan variasi, langsung confirm
   React.useEffect(() => {
     if (!hasAnyVariation) {
       onConfirm(promo.items ?? []);
@@ -312,17 +296,8 @@ const PromoVariationModal: React.FC<{
   if (!hasAnyVariation) return null;
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      zIndex: 200, padding: '20px', backdropFilter: 'blur(4px)',
-    }}>
-      <div style={{
-        background: 'white', borderRadius: '20px', padding: '24px',
-        width: '100%', maxWidth: '440px', maxHeight: '80vh', overflowY: 'auto',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-      }}>
-        {/* Header */}
+    <div className="promo-var-overlay">
+      <div className="promo-var-modal">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <div>
             <h3 style={{ margin: '0 0 2px', fontSize: '16px', fontWeight: '800', color: C.text }}>
@@ -335,14 +310,12 @@ const PromoVariationModal: React.FC<{
           </button>
         </div>
 
-        {/* Items — hanya dynamic variation yang perlu dipilih */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
           {dynamicItems.map((pi, idx) => {
             const variations = pi.menu?.variations ?? [];
             const hasVar = variations.length > 0;
             const selected = selectedVariations[pi.menu_id];
 
-            // Group variations by name
             const grouped = variations.reduce((acc, v) => {
               if (!acc[v.name]) acc[v.name] = [];
               acc[v.name].push(v);
@@ -406,7 +379,6 @@ const PromoVariationModal: React.FC<{
           })}
         </div>
 
-        {/* Actions */}
         <div style={{ display: 'flex', gap: '10px' }}>
           <button onClick={onClose} style={{
             flex: 1, padding: '12px', border: '1.5px solid #e8e4dc', borderRadius: '10px',
@@ -433,7 +405,7 @@ const PromoVariationModal: React.FC<{
   );
 };
 
-// ── Main Order Page ────────────────────────────────────────────────────────────────
+// ── Main Order Page ──
 export const Order: React.FC = () => {
   const { tenant } = useAuth();
   const { items, clearCart, addToCart, addPromoToCart, subtotal } = useCart();
@@ -459,13 +431,27 @@ export const Order: React.FC = () => {
   const [promoLoading, setPromoLoading] = useState(false);
   const [promoVariationModal, setPromoVariationModal] = useState<Promo | null>(null);
 
+  // ── NEW: Mobile state ──
+  const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
   // ── Processing overlay state ──
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingMsg, setProcessingMsg] = useState('Memproses...');
   const [isAdding, setIsAdding] = useState(false);
   const [stockAlert, setStockAlert] = useState<string | null>(null);
 
-  // ── Fetch logic — UNTOUCHED ──────────────────────────────────────────────────
+  // ── Detect mobile ──
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // ── Fetch logic ──
   useEffect(() => { loadMenus(); }, [selectedCategory, searchTerm]);
 
   useEffect(() => {
@@ -534,6 +520,8 @@ export const Order: React.FC = () => {
   const handleCheckout = () => {
     if (items.length === 0) { toast.error('Keranjang masih kosong'); return; }
     setIsPaymentModalOpen(true);
+    // Close mobile cart if open
+    if (isMobile) setIsMobileCartOpen(false);
   };
 
   const handlePayment = async (
@@ -546,8 +534,9 @@ export const Order: React.FC = () => {
     if (cashAmount) setPaidAmount(cashAmount);
     setIsProcessing(true);
     setProcessingMsg('Mengecek stok bahan baku...');
-    await new Promise(r => setTimeout(r, 600)); // beri jeda biar keliatan
-    setProcessingMsg('Membuat pesanan...'); try {
+    await new Promise(r => setTimeout(r, 600));
+    setProcessingMsg('Membuat pesanan...');
+    try {
       const orderData = {
         customer_name: customerName || 'Walk-in Customer',
         payment_method: paymentMethod,
@@ -566,15 +555,9 @@ export const Order: React.FC = () => {
           const promo = promos.find(p => p.id === item.promo_id);
           if (!promo) return [];
 
-          // Pakai promo_items dari cart — sudah include variation_id yang dipilih user
-          // Fallback ke promo.items dari server jika cart tidak punya
           const promoItems = (item.promo_items && item.promo_items.length > 0)
             ? item.promo_items
             : promo.items;
-          console.log('[PROMO DEBUG] item.promo_items:', JSON.stringify(item.promo_items));
-          console.log('[PROMO DEBUG] promoItems used:', JSON.stringify(promoItems?.map(pi => ({ menu_id: pi.menu_id, variation_id: pi.variation_id, qty: pi.quantity }))));
-          console.log('[PROMO DEBUG] item.promo_items:', JSON.stringify(item.promo_items));
-          console.log('[PROMO DEBUG] promoItems used:', JSON.stringify(promoItems?.map(pi => ({ menu_id: pi.menu_id, variation_id: pi.variation_id, qty: pi.quantity }))));
 
           const normalTotal = promoItems.reduce(
             (sum, pi) => sum + (pi.menu?.base_price ?? 0) * pi.quantity, 0
@@ -586,7 +569,6 @@ export const Order: React.FC = () => {
             const basePromoItemPrice = normalTotal > 0
               ? Math.round((promo.promo_price * proportion) / pi.quantity)
               : Math.round(promo.promo_price / promoItems.reduce((s, x) => s + x.quantity, 0));
-            // Delta harga variasi hanya untuk dynamic (ditanggung customer)
             const varDeltaPrice = pi.addon_mode === 'dynamic' && pi.variation_id
               ? (pi.menu?.variations?.find((v: any) => v.id === pi.variation_id)?.price ?? 0)
               : 0;
@@ -601,7 +583,6 @@ export const Order: React.FC = () => {
         }),
       };
 
-      console.log('[ORDER PAYLOAD] items:', JSON.stringify(orderData.items, null, 2));
       const order = await orderApi.createOrder(orderData);
       setProcessingMsg('Menyimpan pesanan...');
       toast.success('Transaksi berhasil!');
@@ -628,7 +609,6 @@ export const Order: React.FC = () => {
     } catch (err: any) {
       const errData = err?.response?.data;
       if (errData?.error_code === 'STOCK_INSUFFICIENT') {
-        // Tampilkan modal alert di tengah, bukan toast
         setStockAlert(errData.error);
       } else {
         toast.error('Transaksi gagal');
@@ -642,11 +622,11 @@ export const Order: React.FC = () => {
     ? (selectedMenu.base_price + (selectedVariation?.price || 0)) * qty
     : 0;
 
-  // ── Render ───────────────────────────────────────────────────────────────────
+  const totalItems = items.reduce((s, i) => s + i.quantity, 0);
+
+  // ── Render ──
   return (
-
     <div className="pos-root">
-
       {/* ── FULLSCREEN PROCESSING OVERLAY ── */}
       {isProcessing && (
         <div className="pos-process-overlay">
@@ -660,7 +640,6 @@ export const Order: React.FC = () => {
 
       {/* ── LEFT PANEL ── */}
       <div className="pos-left">
-
         {/* Page header */}
         <div className="pos-header">
           <div className="pos-header-title-group">
@@ -676,11 +655,11 @@ export const Order: React.FC = () => {
             </div>
           </div>
 
-          {/* Live cart count pill */}
-          {items.length > 0 && (
+          {/* Cart pill - desktop only */}
+          {!isMobile && items.length > 0 && (
             <div className="pos-cart-pill">
               <CartIcon />
-              <span>{items.reduce((s, i) => s + i.quantity, 0)} item</span>
+              <span>{totalItems} item</span>
               <span className="pos-cart-pill-sep" />
               <span className="pos-cart-pill-total">{formatCurrency(subtotal)}</span>
             </div>
@@ -790,12 +769,10 @@ export const Order: React.FC = () => {
                   <div key={promo.id} className="pos-menu-grid-item" style={{ animationDelay: `${i * 0.04}s` }}>
                     <PromoCard promo={promo} onAdd={() => {
                       if (promo.unavailable_reason) return;
-                      // Hanya tampilkan modal jika ada item dengan mode 'dynamic'
                       const hasDynamicItems = promo.items?.some(pi => pi.addon_mode === 'dynamic');
                       if (hasDynamicItems) {
                         setPromoVariationModal(promo);
                       } else {
-                        // Semua fixed atau no-variation — langsung add
                         addPromoToCart(promo, promo.items);
                       }
                     }} />
@@ -807,10 +784,54 @@ export const Order: React.FC = () => {
         )}
       </div>
 
-      {/* ── RIGHT PANEL: Cart ── */}
-      <div className="pos-right">
-        <Cart onCheckout={handleCheckout} />
-      </div>
+      {/* ── RIGHT PANEL: Cart (Desktop) ── */}
+      {!isMobile && (
+        <div className="pos-right">
+          <Cart onCheckout={handleCheckout} />
+        </div>
+      )}
+
+      {/* ── MOBILE: Bottom Cart Bar + Drawer ── */}
+      {isMobile && (
+        <>
+          {/* Floating cart bar at bottom */}
+          <div className={`mobile-cart-bar ${items.length > 0 ? 'mobile-cart-bar--active' : ''}`}>
+            <button
+              className="mobile-cart-bar-btn"
+              onClick={() => setIsMobileCartOpen(!isMobileCartOpen)}
+            >
+              <div className="mobile-cart-bar-left">
+                <div className="mobile-cart-bar-icon">
+                  <CartIcon />
+                  {totalItems > 0 && (
+                    <span className="mobile-cart-bar-badge">{totalItems}</span>
+                  )}
+                </div>
+                <span className="mobile-cart-bar-label">
+                  {items.length === 0 ? 'Keranjang Kosong' : 'Lihat Keranjang'}
+                </span>
+              </div>
+              <div className="mobile-cart-bar-right">
+                {items.length > 0 && (
+                  <span className="mobile-cart-bar-total">{formatCurrency(subtotal)}</span>
+                )}
+                {isMobileCartOpen ? <ChevronDownIcon /> : <ChevronUpIcon />}
+              </div>
+            </button>
+          </div>
+
+          {/* Mobile cart drawer */}
+          {isMobileCartOpen && (
+            <div className="mobile-cart-overlay" onClick={() => setIsMobileCartOpen(false)} />
+          )}
+          <div className={`mobile-cart-drawer ${isMobileCartOpen ? 'mobile-cart-drawer--open' : ''}`}>
+            <div className="mobile-cart-drawer-handle" />
+            <div className="mobile-cart-drawer-content">
+              <Cart onCheckout={handleCheckout} />
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ── Menu Detail Modal ── */}
       <Modal isOpen={!!selectedMenu} onClose={() => setSelectedMenu(null)} title={selectedMenu?.name || ''} size="md">
@@ -931,64 +952,13 @@ export const Order: React.FC = () => {
 
       {/* ── STOCK ALERT MODAL ── */}
       {stockAlert && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 9999,
-          background: 'rgba(0,0,0,0.55)',
-          backdropFilter: 'blur(6px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: '20px',
-          animation: 'fadeIn 0.2s ease',
-        }}>
-          <div style={{
-            background: 'white', borderRadius: '24px',
-            padding: '32px 28px', maxWidth: '400px', width: '100%',
-            textAlign: 'center',
-            boxShadow: '0 24px 64px rgba(0,0,0,0.2)',
-            animation: 'cardIn 0.28s cubic-bezier(0.34,1.1,0.64,1)',
-          }}>
-            {/* Icon */}
-            <div style={{
-              width: '64px', height: '64px', borderRadius: '50%',
-              background: '#fff3ee', margin: '0 auto 16px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '28px',
-            }}>
-              ⚠️
-            </div>
-
-            <h3 style={{
-              margin: '0 0 8px', fontSize: '18px', fontWeight: '800',
-              color: '#1e1a14', letterSpacing: '-0.02em',
-            }}>
-              Stok Tidak Mencukupi
-            </h3>
-
-            <p style={{
-              margin: '0 0 24px', fontSize: '14px', color: '#8a8278',
-              lineHeight: 1.6, fontWeight: '500',
-            }}>
-              {stockAlert}
-            </p>
-
-            <p style={{
-              margin: '0 0 24px', fontSize: '12px',
-              color: '#e8622a', fontWeight: '600',
-              background: '#fff3ee', borderRadius: '8px', padding: '8px 12px',
-            }}>
-              Pesanan tidak dapat diproses. Tambahkan stok bahan baku terlebih dahulu di menu stok bahan.
-            </p>
-
-            <button
-              onClick={() => setStockAlert(null)}
-              style={{
-                width: '100%', padding: '13px', border: 'none',
-                borderRadius: '13px', cursor: 'pointer',
-                background: 'linear-gradient(135deg, #c94f1a, #e8622a)',
-                color: 'white', fontSize: '14px', fontWeight: '700',
-                fontFamily: 'inherit',
-                boxShadow: '0 4px 14px rgba(232,98,42,0.35)',
-              }}
-            >
+        <div className="stock-alert-overlay">
+          <div className="stock-alert-modal">
+            <div className="stock-alert-icon">⚠️</div>
+            <h3 className="stock-alert-title">Stok Tidak Mencukupi</h3>
+            <p className="stock-alert-msg">{stockAlert}</p>
+            <p className="stock-alert-hint">Pesanan tidak dapat diproses. Tambahkan stok bahan baku terlebih dahulu di menu stok bahan.</p>
+            <button onClick={() => setStockAlert(null)} className="stock-alert-btn">
               Mengerti
             </button>
           </div>
@@ -996,7 +966,6 @@ export const Order: React.FC = () => {
       )}
 
       {/* ── Modals ── */}
-      {/* Promo Variation Modal */}
       {promoVariationModal && (
         <PromoVariationModal
           promo={promoVariationModal}
@@ -1034,6 +1003,10 @@ export const Order: React.FC = () => {
         @keyframes spin   { to { transform: rotate(360deg); } }
         @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
         @keyframes pulse  { 0%,100%{opacity:1} 50%{opacity:.5} }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes cardIn { from {opacity:0;transform:scale(0.88) translateY(16px)} to {opacity:1;transform:scale(1) translateY(0)} }
+        @keyframes overlayIn { from{opacity:0} to{opacity:1} }
 
         /* ── ROOT ── */
         .pos-root {
@@ -1153,9 +1126,7 @@ export const Order: React.FC = () => {
           display: flex; flex-direction: column; gap: 11px;
           flex-shrink: 0;
         }
-        .pos-search-wrap {
-          position: relative;
-        }
+        .pos-search-wrap { position: relative; }
         .pos-search-icon {
           position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
           display: flex; align-items: center;
@@ -1378,8 +1349,6 @@ export const Order: React.FC = () => {
         .pos-loading-dots--dark span { background: ${C.primaryDark}; }
 
         /* ── FULLSCREEN PROCESSING OVERLAY ── */
-        @keyframes overlayIn { from{opacity:0} to{opacity:1} }
-        @keyframes cardIn { from{opacity:0;transform:scale(0.88) translateY(16px)} to{opacity:1;transform:scale(1) translateY(0)} }
         .pos-process-overlay {
           position: fixed; inset: 0; z-index: 9999;
           background: rgba(244,240,232,0.82);
@@ -1542,6 +1511,281 @@ export const Order: React.FC = () => {
           box-shadow: 0 8px 24px rgba(91,140,90,0.45);
         }
         .modal-add-btn:active { transform: translateY(0); }
+
+        /* ── STOCK ALERT ── */
+        .stock-alert-overlay {
+          position: fixed; inset: 0; z-index: 9999;
+          background: rgba(0,0,0,0.55);
+          backdrop-filter: blur(6px);
+          display: flex; align-items: center; justify-content: center;
+          padding: 20px;
+          animation: fadeIn 0.2s ease;
+        }
+        .stock-alert-modal {
+          background: white; border-radius: 24px;
+          padding: 32px 28px; max-width: 400px; width: 100%;
+          text-align: center;
+          box-shadow: 0 24px 64px rgba(0,0,0,0.2);
+          animation: cardIn 0.28s cubic-bezier(0.34,1.1,0.64,1);
+        }
+        .stock-alert-icon {
+          width: 64px; height: 64px; border-radius: 50%;
+          background: #fff3ee; margin: 0 auto 16px;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 28px;
+        }
+        .stock-alert-title {
+          margin: 0 0 8px; font-size: 18px; font-weight: 800;
+          color: #1e1a14; letter-spacing: -0.02em;
+        }
+        .stock-alert-msg {
+          margin: 0 0 24px; font-size: 14px; color: #8a8278;
+          line-height: 1.6; font-weight: 500;
+        }
+        .stock-alert-hint {
+          margin: 0 0 24px; font-size: 12px;
+          color: #e8622a; font-weight: 600;
+          background: #fff3ee; border-radius: 8px; padding: 8px 12px;
+        }
+        .stock-alert-btn {
+          width: 100%; padding: 13px; border: none;
+          border-radius: 13px; cursor: pointer;
+          background: linear-gradient(135deg, #c94f1a, #e8622a);
+          color: white; font-size: 14px; font-weight: 700;
+          font-family: inherit;
+          box-shadow: 0 4px 14px rgba(232,98,42,0.35);
+        }
+
+        /* ── PROMO VARIATION MODAL ── */
+        .promo-var-overlay {
+          position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+          display: flex; align-items: center; justify-content: center;
+          z-index: 200; padding: 20px; backdrop-filter: blur(4px);
+        }
+        .promo-var-modal {
+          background: white; border-radius: 20px; padding: 24px;
+          width: 100%; max-width: 440px; max-height: 80vh; overflow-y: auto;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+
+        /* ═══════════════════════════════════════════ */
+        /* ── MOBILE STYLES ── */
+        /* ═══════════════════════════════════════════ */
+        @media (max-width: 767px) {
+          .pos-root {
+            height: 100vh;
+            flex-direction: column;
+            gap: 0;
+            overflow: hidden;
+          }
+
+          .pos-left {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 12px 80px 12px; /* extra bottom padding for cart bar */
+          }
+
+          .pos-header {
+            padding: 4px 0;
+          }
+          .pos-header-icon {
+            width: 34px; height: 34px;
+            border-radius: 10px;
+          }
+          .pos-header-icon svg {
+            width: 14px; height: 14px;
+          }
+          .pos-title {
+            font-size: 18px;
+          }
+          .pos-subtitle {
+            font-size: 10.5px;
+          }
+
+          .pos-tabs {
+            gap: 4px;
+            padding: 4px;
+          }
+          .pos-tab {
+            padding: 8px 10px;
+            font-size: 12px;
+            gap: 5px;
+          }
+
+          .pos-filter-bar {
+            padding: 10px 12px;
+            gap: 8px;
+          }
+          .pos-search-input {
+            padding: 8px 30px 8px 34px;
+            font-size: 12px;
+          }
+
+          .pos-menu-grid {
+            grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+            gap: 8px;
+          }
+          .pos-promo-grid {
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 8px;
+          }
+
+          .menu-card-img-wrap {
+            height: 100px;
+          }
+          .menu-card-body {
+            padding: 8px 10px 10px;
+          }
+          .menu-card-name {
+            font-size: 11.5px;
+          }
+          .menu-card-price {
+            font-size: 12px;
+          }
+
+          .promo-card-header {
+            height: 90px;
+          }
+          .promo-card-body {
+            padding: 8px 10px 11px;
+          }
+          .promo-card-name {
+            font-size: 11.5px;
+          }
+          .promo-card-price {
+            font-size: 12.5px;
+          }
+
+          /* Hide right panel on mobile */
+          .pos-right {
+            display: none;
+          }
+
+          /* Mobile cart bar */
+          .mobile-cart-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 500;
+            background: white;
+            border-top: 1px solid #e8e4dc;
+            padding: 8px 12px;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+            transition: all 0.25s ease;
+          }
+          .mobile-cart-bar--active {
+            box-shadow: 0 -4px 24px rgba(91,140,90,0.2);
+          }
+          .mobile-cart-bar-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            padding: 4px 0;
+          }
+          .mobile-cart-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          }
+          .mobile-cart-bar-icon {
+            position: relative;
+            display: flex;
+            align-items: center;
+            color: ${C.sub};
+          }
+          .mobile-cart-bar--active .mobile-cart-bar-icon {
+            color: ${C.primary};
+          }
+          .mobile-cart-bar-badge {
+            position: absolute;
+            top: -6px;
+            right: -8px;
+            background: ${C.orange};
+            color: white;
+            font-size: 10px;
+            font-weight: 800;
+            min-width: 16px;
+            height: 16px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+          }
+          .mobile-cart-bar-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: ${C.sub};
+          }
+          .mobile-cart-bar--active .mobile-cart-bar-label {
+            color: ${C.text};
+          }
+          .mobile-cart-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: ${C.sub};
+          }
+          .mobile-cart-bar-total {
+            font-size: 14px;
+            font-weight: 800;
+            color: ${C.primary};
+          }
+
+          /* Mobile cart drawer */
+          .mobile-cart-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 598;
+            background: rgba(0,0,0,0.4);
+            animation: fadeIn 0.2s ease;
+          }
+          .mobile-cart-drawer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 599;
+            background: white;
+            border-radius: 20px 20px 0 0;
+            max-height: 70vh;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 -8px 40px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+          }
+          .mobile-cart-drawer--open {
+            transform: translateY(0);
+          }
+          .mobile-cart-drawer-handle {
+            width: 36px;
+            height: 4px;
+            background: #d0c8be;
+            border-radius: 2px;
+            margin: 10px auto 4px;
+            flex-shrink: 0;
+          }
+          .mobile-cart-drawer-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 8px 8px;
+          }
+
+          /* Modal full screen on mobile */
+          .modal-body {
+            gap: 12px;
+          }
+          .modal-img-wrap {
+            height: 150px;
+          }
+        }
 
         /* scrollbar */
         ::-webkit-scrollbar { width: 3px; height: 3px; }

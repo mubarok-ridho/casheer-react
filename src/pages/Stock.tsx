@@ -192,6 +192,9 @@ export const Stock: React.FC = () => {
   const [searchFocus, setSearchFocus] = useState(false);
   const [filter,      setFilter]      = useState<'all' | 'low'>('all');
 
+  // ── NEW: Mobile expanded card state ──
+  const [expandedCard, setExpandedCard] = useState<number | null>(null);
+
   // ── Fetch logic — UNTOUCHED ──────────────────────────────────────────────────
   useEffect(() => { load(); }, []);
 
@@ -423,7 +426,6 @@ export const Stock: React.FC = () => {
                     const isWarn = !isLow && ing.low_stock_at > 0 && ing.stock <= ing.low_stock_at * 1.5;
                     return (
                       <div key={ing.id} className={`sk-row ${isLow ? 'sk-row--low' : ''} ${idx === filtered.length - 1 ? 'sk-row--last' : ''}`}>
-                        {/* Name */}
                         <div className="sk-row-name">
                           <div className={`sk-row-dot ${isLow ? 'sk-row-dot--low' : isWarn ? 'sk-row-dot--warn' : ''}`} />
                           <div>
@@ -431,16 +433,12 @@ export const Stock: React.FC = () => {
                             {isLow && <span className="sk-low-badge"><WarningIcon /> Hampir Habis</span>}
                           </div>
                         </div>
-
-                        {/* Stock */}
                         <div className="sk-row-stock">
                           <span className="sk-row-stock-val" style={{ color: isLow ? C.orange : C.primary }}>
                             {displayStock(ing.stock, ing.unit)}
                           </span>
                           <StockBar stock={ing.stock} lowAt={ing.low_stock_at} />
                         </div>
-
-                        {/* Cost */}
                         <div className="sk-row-cost">
                           <span className="sk-row-cost-main">{formatCurrency(ing.cost_per_unit)}/{ing.unit}</span>
                           {(ing.unit === 'g' || ing.unit === 'ml') && (
@@ -449,13 +447,9 @@ export const Stock: React.FC = () => {
                             </span>
                           )}
                         </div>
-
-                        {/* Low stock */}
                         <span className="sk-row-low">
                           {ing.low_stock_at > 0 ? displayStock(ing.low_stock_at, ing.unit) : <span style={{ color: '#d0c8be' }}>—</span>}
                         </span>
-
-                        {/* Actions */}
                         <div className="sk-row-actions">
                           <button onClick={() => openEdit(ing)} className="sk-btn-edit" title="Edit">
                             <EditIcon />
@@ -470,42 +464,92 @@ export const Stock: React.FC = () => {
                 </div>
               </div>
 
-              {/* Mobile cards */}
+              {/* Mobile cards - IMPROVED */}
               <div className="sk-cards">
                 {filtered.map(ing => {
                   const isLow  = ing.low_stock_at > 0 && ing.stock <= ing.low_stock_at;
                   const isWarn = !isLow && ing.low_stock_at > 0 && ing.stock <= ing.low_stock_at * 1.5;
+                  const isExpanded = expandedCard === ing.id;
+                  
                   return (
-                    <div key={ing.id} className={`sk-card ${isLow ? 'sk-card--low' : ''}`}>
-                      <div className="sk-card-top">
-                        <div className="sk-card-name-row">
+                    <div key={ing.id} className={`sk-card ${isLow ? 'sk-card--low' : ''} ${isExpanded ? 'sk-card--expanded' : ''}`}>
+                      {/* Main row - always visible */}
+                      <div 
+                        className="sk-card-main"
+                        onClick={() => setExpandedCard(isExpanded ? null : ing.id)}
+                      >
+                        <div className="sk-card-indicator">
                           <div className={`sk-row-dot ${isLow ? 'sk-row-dot--low' : isWarn ? 'sk-row-dot--warn' : ''}`} />
-                          <span className="sk-card-name">{ing.name}</span>
-                          {isLow && <span className="sk-low-badge sk-low-badge--sm"><WarningIcon /></span>}
                         </div>
-                        <div className="sk-card-actions-top">
-                          <button onClick={() => openEdit(ing)} className="sk-btn-edit"><EditIcon /></button>
-                          <button onClick={() => handleDelete(ing.id, ing.name)} className="sk-btn-delete"><TrashIcon /></button>
+                        <div className="sk-card-info">
+                          <div className="sk-card-name-row">
+                            <span className="sk-card-name">{ing.name}</span>
+                            {isLow && <span className="sk-low-badge"><WarningIcon /> Habis</span>}
+                          </div>
+                          <div className="sk-card-meta">
+                            <span className="sk-card-meta-item" style={{ color: isLow ? C.orange : C.primary }}>
+                              Stok: <strong>{displayStock(ing.stock, ing.unit)}</strong>
+                            </span>
+                            <span className="sk-card-meta-item">
+                              Harga: <strong>{formatCurrency(ing.cost_per_unit)}/{ing.unit}</strong>
+                            </span>
+                          </div>
+                        </div>
+                        <div className="sk-card-chevron">
+                          <svg 
+                            width="18" height="18" viewBox="0 0 24 24" fill="none" 
+                            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                            style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
+                          >
+                            <polyline points="6 9 12 15 18 9" />
+                          </svg>
                         </div>
                       </div>
-                      <div className="sk-card-body">
-                        <div className="sk-card-stat">
-                          <span className="sk-card-stat-lbl">Stok</span>
-                          <span className="sk-card-stat-val" style={{ color: isLow ? C.orange : C.primary }}>
-                            {displayStock(ing.stock, ing.unit)}
-                          </span>
+
+                      {/* Expandable detail */}
+                      {isExpanded && (
+                        <div className="sk-card-detail">
+                          <div className="sk-card-detail-grid">
+                            <div className="sk-card-detail-item">
+                              <span className="sk-card-detail-label">Stok Saat Ini</span>
+                              <span className="sk-card-detail-value" style={{ color: isLow ? C.orange : C.primary }}>
+                                {displayStock(ing.stock, ing.unit)}
+                              </span>
+                              {ing.low_stock_at > 0 && (
+                                <StockBar stock={ing.stock} lowAt={ing.low_stock_at} />
+                              )}
+                            </div>
+                            <div className="sk-card-detail-item">
+                              <span className="sk-card-detail-label">Harga per Unit</span>
+                              <span className="sk-card-detail-value">{formatCurrency(ing.cost_per_unit)}/{ing.unit}</span>
+                              {(ing.unit === 'g' || ing.unit === 'ml') && (
+                                <span className="sk-card-detail-sub">
+                                  {formatCurrency(ing.cost_per_unit * 1000)}/{ing.unit === 'g' ? 'kg' : 'liter'}
+                                </span>
+                              )}
+                            </div>
+                            <div className="sk-card-detail-item">
+                              <span className="sk-card-detail-label">Min. Stok</span>
+                              <span className="sk-card-detail-value">
+                                {ing.low_stock_at > 0 ? displayStock(ing.low_stock_at, ing.unit) : '—'}
+                              </span>
+                            </div>
+                            <div className="sk-card-detail-item">
+                              <span className="sk-card-detail-label">Nilai Total</span>
+                              <span className="sk-card-detail-value">{formatCurrency(ing.stock * ing.cost_per_unit)}</span>
+                            </div>
+                          </div>
+                          <div className="sk-card-detail-actions">
+                            <button onClick={(e) => { e.stopPropagation(); openEdit(ing); }} className="sk-btn-edit sk-btn-edit--full">
+                              <EditIcon />
+                              <span>Edit</span>
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); handleDelete(ing.id, ing.name); }} className="sk-btn-delete sk-btn-delete--full">
+                              <TrashIcon />
+                              <span>Hapus</span>
+                            </button>
+                          </div>
                         </div>
-                        <div className="sk-card-stat">
-                          <span className="sk-card-stat-lbl">Harga</span>
-                          <span className="sk-card-stat-val">{formatCurrency(ing.cost_per_unit)}/{ing.unit}</span>
-                        </div>
-                        <div className="sk-card-stat">
-                          <span className="sk-card-stat-lbl">Min. Stok</span>
-                          <span className="sk-card-stat-val">{ing.low_stock_at > 0 ? displayStock(ing.low_stock_at, ing.unit) : '—'}</span>
-                        </div>
-                      </div>
-                      {ing.low_stock_at > 0 && (
-                        <StockBar stock={ing.stock} lowAt={ing.low_stock_at} />
                       )}
                     </div>
                   );
@@ -681,6 +725,7 @@ export const Stock: React.FC = () => {
         @keyframes sk-blink    { 0%,80%,100%{opacity:0} 40%{opacity:1} }
         @keyframes sk-slide-in { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
         @keyframes sk-pulse    { 0%,100%{opacity:1} 50%{opacity:.4} }
+        @keyframes sk-expand   { from{opacity:0;max-height:0} to{opacity:1;max-height:300px} }
 
         /* ── Root ── */
         .sk-root {
@@ -840,7 +885,6 @@ export const Stock: React.FC = () => {
           font-size: 10.5px; font-weight: 700; color: ${C.sub};
           text-transform: uppercase; letter-spacing: 0.06em;
         }
-        .sk-table-body {}
         .sk-row {
           display: grid; grid-template-columns: 2fr 1.4fr 1.6fr 1.2fr 88px;
           padding: 13px 20px; align-items: center;
@@ -867,7 +911,6 @@ export const Stock: React.FC = () => {
           background: ${C.orangeLight}; border-radius: 20px; padding: 2px 8px;
           margin-left: 7px; border: 1px solid ${C.orangeBorder};
         }
-        .sk-low-badge--sm { margin-left: 4px; padding: 2px 6px; }
 
         .sk-row-stock { display: flex; flex-direction: column; gap: 5px; }
         .sk-row-stock-val { font-size: 14px; font-weight: 700; }
@@ -887,29 +930,105 @@ export const Stock: React.FC = () => {
           display: flex; align-items: center; transition: all 0.15s;
         }
         .sk-btn-edit:hover { background: ${C.primaryLight}; border-color: rgba(91,140,90,0.3); }
+        .sk-btn-edit--full {
+          flex: 1; justify-content: center; gap: 6px;
+          padding: 10px; font-size: 12px; font-weight: 700;
+          border-radius: 10px;
+        }
         .sk-btn-delete {
           padding: 7px; border: none; border-radius: 9px;
           background: ${C.redLight}; cursor: pointer; color: ${C.red};
           display: flex; align-items: center; transition: background 0.15s;
         }
         .sk-btn-delete:hover { background: #fddad4; }
+        .sk-btn-delete--full {
+          flex: 1; justify-content: center; gap: 6px;
+          padding: 10px; font-size: 12px; font-weight: 700;
+          border-radius: 10px;
+        }
 
         /* ── Mobile cards ── */
         .sk-cards { display: none; flex-direction: column; gap: 10px; }
         .sk-card {
-          background: white; border-radius: 16px; padding: 14px 16px;
+          background: white; border-radius: 16px;
           border: 1.5px solid rgba(0,0,0,0.06);
           box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+          overflow: hidden;
+          transition: border-color 0.2s, box-shadow 0.2s;
         }
         .sk-card--low { border-color: rgba(232,98,42,0.2); background: #fffaf7; }
-        .sk-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-        .sk-card-name-row { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
-        .sk-card-name { font-size: 14px; font-weight: 700; color: ${C.text}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .sk-card-actions-top { display: flex; gap: 6px; flex-shrink: 0; }
-        .sk-card-body { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
-        .sk-card-stat { display: flex; flex-direction: column; gap: 3px; }
-        .sk-card-stat-lbl { font-size: 10px; font-weight: 700; color: ${C.sub}; text-transform: uppercase; letter-spacing: 0.06em; }
-        .sk-card-stat-val { font-size: 13px; font-weight: 700; color: ${C.text}; }
+        .sk-card--expanded { box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+
+        /* Card main row - always visible */
+        .sk-card-main {
+          display: flex; align-items: center; gap: 10px;
+          padding: 12px 14px;
+          cursor: pointer;
+          user-select: none;
+          -webkit-tap-highlight-color: transparent;
+          transition: background 0.15s;
+        }
+        .sk-card-main:active { background: rgba(0,0,0,0.02); }
+        .sk-card-indicator {
+          display: flex; align-items: center; flex-shrink: 0;
+        }
+        .sk-card-info {
+          flex: 1; min-width: 0;
+        }
+        .sk-card-name-row {
+          display: flex; align-items: center; gap: 6px;
+          margin-bottom: 4px;
+        }
+        .sk-card-name {
+          font-size: 14px; font-weight: 700; color: ${C.text};
+          overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .sk-low-badge {
+          display: inline-flex; align-items: center; gap: 3px;
+          font-size: 10px; font-weight: 700; color: ${C.orange};
+          background: ${C.orangeLight}; border-radius: 20px; padding: 2px 7px;
+          border: 1px solid ${C.orangeBorder}; white-space: nowrap; flex-shrink: 0;
+        }
+        .sk-card-meta {
+          display: flex; gap: 12px;
+        }
+        .sk-card-meta-item {
+          font-size: 11px; color: ${C.sub}; font-weight: 500;
+        }
+        .sk-card-meta-item strong {
+          font-weight: 700; color: inherit;
+        }
+        .sk-card-chevron {
+          display: flex; align-items: center; color: ${C.sub};
+          flex-shrink: 0; padding: 4px;
+        }
+
+        /* Card detail - expandable */
+        .sk-card-detail {
+          padding: 0 14px 14px;
+          border-top: 1px solid #f5f2ed;
+          animation: sk-expand 0.25s ease;
+        }
+        .sk-card-detail-grid {
+          display: grid; grid-template-columns: 1fr 1fr;
+          gap: 10px; margin-bottom: 12px; padding-top: 12px;
+        }
+        .sk-card-detail-item {
+          display: flex; flex-direction: column; gap: 3px;
+        }
+        .sk-card-detail-label {
+          font-size: 10px; font-weight: 700; color: ${C.sub};
+          text-transform: uppercase; letter-spacing: 0.06em;
+        }
+        .sk-card-detail-value {
+          font-size: 13px; font-weight: 700; color: ${C.text};
+        }
+        .sk-card-detail-sub {
+          font-size: 11px; color: ${C.sub};
+        }
+        .sk-card-detail-actions {
+          display: flex; gap: 8px;
+        }
 
         /* ── Empty ── */
         .sk-empty {
@@ -1052,21 +1171,40 @@ export const Stock: React.FC = () => {
         @media (max-width: 767px) {
           .sk-root { gap: 12px; }
           .sk-hero { padding: 16px 18px; border-radius: 18px; }
+          .sk-hero-bg { display: none; }
           .sk-title { font-size: 20px; }
           .sk-table-wrap { display: none; }
           .sk-cards { display: flex; }
           .sk-filter-card { padding: 12px 14px; border-radius: 16px; }
+          .sk-filter-pills { gap: 5px; }
+          .sk-filter-pill { padding: 5px 12px; font-size: 11px; }
           .sk-cost-inputs { flex-wrap: wrap; }
           .sk-cost-col--narrow { flex: 1; }
+          .sk-hero-stats { gap: 6px; }
+          .sk-stat { padding: 8px 10px; border-radius: 10px; }
+          .sk-stat-val { font-size: 16px; }
+          .sk-stat-lbl { font-size: 10px; }
+          .sk-alert-banner { padding: 12px 14px; gap: 8px; }
+          .sk-alert-text { font-size: 12px; }
+          .sk-overlay-card { padding: 28px 24px; border-radius: 20px; }
+          .sk-modal { border-radius: 20px 20px 0 0; max-height: 94vh; }
+          .sk-modal-overlay { align-items: flex-end; padding: 0; }
+          .sk-modal-header { padding: 16px 18px 14px; }
+          .sk-modal-body { padding: 16px 18px; }
+          .sk-modal-footer { padding: 14px 18px; }
         }
         @media (max-width: 479px) {
           .sk-hero { padding: 14px 16px; border-radius: 16px; }
           .sk-title { font-size: 18px; }
-          .sk-hero-stats { flex-wrap: wrap; gap: 8px; }
-          .sk-modal { border-radius: 20px 20px 0 0; max-height: 94vh; }
-          .sk-modal-overlay { align-items: flex-end; }
-          .sk-card-body { grid-template-columns: 1fr 1fr; }
-          .sk-overlay-card { padding: 28px 32px; }
+          .sk-hero-stats { flex-wrap: wrap; gap: 6px; }
+          .sk-card-body { grid-template-columns: 1fr; }
+          .sk-card-detail-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+          .sk-card-meta { flex-direction: column; gap: 2px; }
+          .sk-card-name { font-size: 13px; }
+          .sk-overlay-card { padding: 24px 20px; }
+          .sk-overlay-text { font-size: 13px; }
+          .sk-cost-inputs { flex-direction: column; }
+          .sk-cost-col--narrow { flex: 1; }
         }
         @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
           .sk-hero { flex-direction: row; }

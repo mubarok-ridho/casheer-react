@@ -20,6 +20,7 @@ const IconChart = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="no
 const IconTable = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="3" y1="15" x2="21" y2="15" /><line x1="9" y1="9" x2="9" y2="21" /></svg>;
 const IconLock = () => <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>;
 const IconTrend = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>;
+const IconChevronDown = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>;
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -52,18 +53,8 @@ const get7DayWindow = (endDateStr: string): string[] => {
 
 // ── Lottie Loading Overlay ────────────────────────────────────────────────────
 const LoadingOverlay = () => (
-  <div style={{
-    position: 'fixed', inset: 0, zIndex: 9998,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    background: 'rgba(244,240,232,0.65)', backdropFilter: 'blur(8px)',
-  }}>
-    <div style={{
-      background: 'white', borderRadius: '28px', padding: '36px 52px',
-      boxShadow: '0 24px 64px rgba(0,0,0,0.13), 0 4px 16px rgba(91,140,90,0.1)',
-      border: '1px solid rgba(91,140,90,0.1)',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
-      animation: 'rp-card-in 0.28s cubic-bezier(0.34,1.1,0.64,1)',
-    }}>
+  <div className="rp-loading-overlay">
+    <div className="rp-loading-card">
       <Lottie animationData={lottieTree} loop autoplay style={{ width: 180, height: 180 }} />
       <p className="rp-loading-text">Memuat laporan...</p>
       <div className="rp-dots"><span /><span /><span /></div>
@@ -76,24 +67,32 @@ interface ChartPoint { date: string; revenue: number; expense: number; }
 
 const AreaLineChart: React.FC<{ data: ChartPoint[]; height?: number }> = ({ data, height = 280 }) => {
   const [tooltip, setTooltip] = useState<{ x: number; y: number; yExp: number; idx: number } | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
 
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  const mobileH = isMobile ? 200 : height;
+
   if (!data || data.length === 0) return (
-    <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.sub, fontSize: '13px' }}>
+    <div style={{ height: mobileH, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.sub, fontSize: '13px' }}>
       Belum ada data untuk periode ini
     </div>
   );
 
-  const W = 720; const H = height;
-  const PAD = { t: 24, r: 24, b: 44, l: 76 };
+  const W = 720; const H = mobileH;
+  const PAD = isMobile ? { t: 16, r: 12, b: 36, l: 52 } : { t: 24, r: 24, b: 44, l: 76 };
   const cW = W - PAD.l - PAD.r;
   const cH = H - PAD.t - PAD.b;
   const n = data.length;
 
   const revVals = data.map(d => d.revenue);
   const expVals = data.map(d => d.expense);
-
-  // selalu render kedua line; pakai maxVal dari gabungan keduanya
   const maxVal = Math.max(...revVals, ...expVals, 1) * 1.18;
 
   const toX = (i: number) => n === 1 ? PAD.l + cW / 2 : PAD.l + (i / (n - 1)) * cW;
@@ -116,19 +115,22 @@ const AreaLineChart: React.FC<{ data: ChartPoint[]; height?: number }> = ({ data
 
   const yTicks = [0, 0.25, 0.5, 0.75, 1].map(p => ({ val: maxVal * p, y: toY(maxVal * p) }));
 
-  const onMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (!svgRef.current) return;
+  const onMove = (e: React.MouseEvent<SVGSVGElement> | React.TouchEvent<SVGSVGElement>) => {
+    if (!svgRef.current || isMobile) return;
     const rect = svgRef.current.getBoundingClientRect();
-    const relX = (e.clientX - rect.left) * (W / rect.width) - PAD.l;
+    const clientX = 'touches' in e ? e.touches[0]?.clientX : (e as React.MouseEvent).clientX;
+    if (!clientX) return;
+    const relX = (clientX - rect.left) * (W / rect.width) - PAD.l;
     const idx = Math.max(0, Math.min(n - 1, n === 1 ? 0 : Math.round((relX / cW) * (n - 1))));
     setTooltip({ x: toX(idx), y: toY(revVals[idx]), yExp: toY(expVals[idx]), idx });
   };
 
   return (
     <div style={{ position: 'relative', width: '100%' }}>
-      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height }}
+      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: mobileH }}
         preserveAspectRatio="xMidYMid meet"
-        onMouseMove={onMove} onMouseLeave={() => setTooltip(null)}>
+        onMouseMove={onMove} onTouchMove={onMove}
+        onMouseLeave={() => setTooltip(null)} onTouchEnd={() => setTooltip(null)}>
         <defs>
           <linearGradient id="rp-rev-grad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={C.primary} stopOpacity="0.28" />
@@ -150,39 +152,43 @@ const AreaLineChart: React.FC<{ data: ChartPoint[]; height?: number }> = ({ data
             <line x1={PAD.l} y1={t.y} x2={W - PAD.r} y2={t.y}
               stroke={i === 0 ? '#d8d4cc' : '#ece8e2'} strokeWidth={i === 0 ? 1 : 0.8}
               strokeDasharray={i === 0 ? '0' : '5 4'} />
-            <text x={PAD.l - 10} y={t.y + 4} textAnchor="end" fontSize="10" fill={C.sub}
+            <text x={PAD.l - (isMobile ? 6 : 10)} y={t.y + 4} textAnchor="end"
+              fontSize={isMobile ? "8" : "10"} fill={C.sub}
               fontFamily="Plus Jakarta Sans, sans-serif">
               {t.val >= 1e6 ? `${(t.val / 1e6).toFixed(1)}M` : t.val >= 1000 ? `${(t.val / 1000).toFixed(0)}K` : t.val.toFixed(0)}
             </text>
           </g>
         ))}
 
-        {/* X labels — tampilkan semua 7 titik */}
-        {data.map((d, idx) => (
-          <text key={idx} x={toX(idx)} y={H - 10} textAnchor="middle"
-            fontSize="10" fill={C.sub} fontFamily="Plus Jakarta Sans, sans-serif">
-            {d.date.slice(5)}
-          </text>
-        ))}
+        {/* X labels */}
+        {data.map((d, idx) => {
+          const showLabel = !isMobile || idx % 2 === 0 || idx === data.length - 1;
+          return showLabel ? (
+            <text key={idx} x={toX(idx)} y={H - (isMobile ? 8 : 10)} textAnchor="middle"
+              fontSize={isMobile ? "8" : "10"} fill={C.sub} fontFamily="Plus Jakarta Sans, sans-serif">
+              {d.date.slice(5)}
+            </text>
+          ) : null;
+        })}
 
-        {/* ── Expense area + smooth path (selalu dirender) ── */}
+        {/* Expense area + smooth path */}
         <polygon points={area(expVals)} fill="url(#rp-exp-grad)" />
-        <path d={smoothPath(expVals)} fill="none" stroke={C.red} strokeWidth="2"
+        <path d={smoothPath(expVals)} fill="none" stroke={C.red} strokeWidth={isMobile ? "1.5" : "2"}
           strokeLinejoin="round" strokeLinecap="round" opacity="0.85" />
-        {expVals.map((v, i) => (
-          <circle key={i} cx={toX(i)} cy={toY(v)} r="3.5" fill={C.red} stroke="white" strokeWidth="2" />
+        {(!isMobile || data.length <= 7) && expVals.map((v, i) => (
+          <circle key={i} cx={toX(i)} cy={toY(v)} r={isMobile ? "2.5" : "3.5"} fill={C.red} stroke="white" strokeWidth={isMobile ? "1.5" : "2"} />
         ))}
 
-        {/* ── Revenue area + smooth path ── */}
+        {/* Revenue area + smooth path */}
         <polygon points={area(revVals)} fill="url(#rp-rev-grad)" />
-        <path d={smoothPath(revVals)} fill="none" stroke={C.primary} strokeWidth="2.5"
+        <path d={smoothPath(revVals)} fill="none" stroke={C.primary} strokeWidth={isMobile ? "2" : "2.5"}
           strokeLinejoin="round" strokeLinecap="round" filter="url(#rp-glow)" />
-        {revVals.map((v, i) => (
-          <circle key={i} cx={toX(i)} cy={toY(v)} r="3.5" fill={C.primary} stroke="white" strokeWidth="2" />
+        {(!isMobile || data.length <= 7) && revVals.map((v, i) => (
+          <circle key={i} cx={toX(i)} cy={toY(v)} r={isMobile ? "2.5" : "3.5"} fill={C.primary} stroke="white" strokeWidth={isMobile ? "1.5" : "2"} />
         ))}
 
-        {/* Crosshair */}
-        {tooltip && (
+        {/* Crosshair - desktop only */}
+        {tooltip && !isMobile && (
           <g>
             <line x1={tooltip.x} y1={PAD.t} x2={tooltip.x} y2={PAD.t + cH}
               stroke={C.primary} strokeWidth="1.2" strokeDasharray="5 3" opacity="0.45" />
@@ -194,14 +200,10 @@ const AreaLineChart: React.FC<{ data: ChartPoint[]; height?: number }> = ({ data
         )}
       </svg>
 
-      {/* Tooltip popup */}
-      {tooltip && (
-        <div style={{
-          position: 'absolute', top: '16px',
+      {/* Tooltip popup - desktop only */}
+      {tooltip && !isMobile && (
+        <div className="rp-chart-tooltip" style={{
           left: `clamp(4px, calc(${(tooltip.x / W) * 100}% - 85px), calc(100% - 174px))`,
-          background: 'white', borderRadius: '12px', padding: '11px 15px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.13)', border: `1px solid rgba(0,0,0,0.06)`,
-          fontSize: '12px', pointerEvents: 'none', minWidth: '165px', zIndex: 10,
         }}>
           <p style={{ margin: '0 0 7px', fontWeight: 700, color: C.text, fontSize: '11px' }}>
             {data[tooltip.idx].date}
@@ -226,14 +228,32 @@ const AreaLineChart: React.FC<{ data: ChartPoint[]; height?: number }> = ({ data
       )}
 
       {/* Legend */}
-      <div style={{ display: 'flex', gap: '18px', justifyContent: 'center', marginTop: '10px' }}>
+      <div style={{ display: 'flex', gap: '18px', justifyContent: 'center', marginTop: isMobile ? '6px' : '10px' }}>
         {[{ c: C.primary, l: 'Pendapatan' }, { c: C.red, l: 'Pengeluaran' }].map((x, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: C.sub, fontWeight: 500 }}>
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: isMobile ? '10px' : '12px', color: C.sub, fontWeight: 500 }}>
             <div style={{ width: '22px', height: '3px', borderRadius: '2px', background: x.c }} />
             {x.l}
           </div>
         ))}
       </div>
+
+      {/* Mobile summary cards below chart */}
+      {isMobile && data.length > 0 && (
+        <div className="rp-mobile-chart-summary">
+          <div className="rp-mobile-chart-summary-item">
+            <span className="rp-mobile-chart-summary-label">Total Pendapatan</span>
+            <span className="rp-mobile-chart-summary-value" style={{ color: C.primary }}>
+              {formatCurrency(data.reduce((s, d) => s + d.revenue, 0))}
+            </span>
+          </div>
+          <div className="rp-mobile-chart-summary-item">
+            <span className="rp-mobile-chart-summary-label">Total Pengeluaran</span>
+            <span className="rp-mobile-chart-summary-value" style={{ color: C.red }}>
+              {formatCurrency(data.reduce((s, d) => s + d.expense, 0))}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -242,6 +262,15 @@ const AreaLineChart: React.FC<{ data: ChartPoint[]; height?: number }> = ({ data
 const BarChart: React.FC<{ data: { label: string; revenue: number; expense: number }[] }> = ({ data }) => {
   const [animated, setAnimated] = useState(false);
   const [hovered, setHovered] = useState<number | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
   useEffect(() => { const t = setTimeout(() => setAnimated(true), 150); return () => clearTimeout(t); }, [data]);
 
   if (!data?.length) return (
@@ -249,35 +278,32 @@ const BarChart: React.FC<{ data: { label: string; revenue: number; expense: numb
   );
 
   const maxVal = Math.max(...data.flatMap(d => [d.revenue, d.expense]), 1) * 1.15;
+  const barH = isMobile ? 100 : 130;
 
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '160px', padding: '0 4px' }}>
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: isMobile ? '2px' : '4px', height: `${barH + 30}px`, padding: '0 2px' }}>
       {data.map((d, i) => {
-        const revH = Math.max(2, (d.revenue / maxVal) * 130);
-        const expH = Math.max(0, (d.expense / maxVal) * 130);
+        const revH = Math.max(2, (d.revenue / maxVal) * barH);
+        const expH = Math.max(0, (d.expense / maxVal) * barH);
         const isHov = hovered === i;
+        const showLabel = !isMobile || data.length <= 14 || i % 3 === 0 || i === data.length - 1;
+        const barW = isMobile ? (d.expense > 0 ? '6px' : '8px') : (d.expense > 0 ? '8px' : '12px');
+
         return (
           <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', cursor: 'default', position: 'relative' }}
             onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)}>
-            {isHov && (
-              <div style={{
-                position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
-                background: 'white', borderRadius: '10px', padding: '9px 12px', fontSize: '11px',
-                boxShadow: '0 6px 20px rgba(0,0,0,0.12)', border: `1px solid rgba(0,0,0,0.06)`,
-                whiteSpace: 'nowrap', zIndex: 10, marginBottom: '5px', pointerEvents: 'none',
-              }}>
+            {isHov && !isMobile && (
+              <div className="rp-bar-tooltip">
                 <p style={{ margin: '0 0 4px', fontWeight: 700, color: C.text }}>{d.label}</p>
                 <p style={{ margin: '0 0 2px', color: C.primary, fontWeight: 700 }}>↑ {formatCurrency(d.revenue)}</p>
                 {d.expense > 0 && <p style={{ margin: 0, color: C.red, fontWeight: 700 }}>↓ {formatCurrency(d.expense)}</p>}
               </div>
             )}
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: '130px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: isMobile ? '1px' : '2px', height: `${barH}px` }}>
               <div style={{
-                width: d.expense > 0 ? '8px' : '12px',
+                width: barW,
                 borderRadius: '4px 4px 0 0',
-                background: isHov
-                  ? `linear-gradient(to top, ${C.primaryDark}, ${C.primary})`
-                  : C.primary,
+                background: C.primary,
                 opacity: isHov ? 1 : 0.82,
                 height: animated ? `${revH}px` : '0px',
                 transition: `height 0.55s cubic-bezier(0.34,1.1,0.64,1) ${i * 25}ms, opacity 0.15s`,
@@ -285,8 +311,9 @@ const BarChart: React.FC<{ data: { label: string; revenue: number; expense: numb
               }} />
               {d.expense > 0 && (
                 <div style={{
-                  width: '8px', borderRadius: '4px 4px 0 0',
-                  background: isHov ? `linear-gradient(to top, #c94030, ${C.red})` : C.red,
+                  width: barW === '6px' ? '5px' : '6px',
+                  borderRadius: '4px 4px 0 0',
+                  background: C.red,
                   opacity: isHov ? 1 : 0.72,
                   height: animated ? `${expH}px` : '0px',
                   transition: `height 0.55s cubic-bezier(0.34,1.1,0.64,1) ${i * 25 + 50}ms, opacity 0.15s`,
@@ -294,12 +321,15 @@ const BarChart: React.FC<{ data: { label: string; revenue: number; expense: numb
                 }} />
               )}
             </div>
-            <span style={{
-              fontSize: '9px', fontWeight: isHov ? 700 : 500,
-              color: isHov ? C.text : C.sub, transition: 'color 0.15s',
-            }}>
-              {d.label.length > 5 ? d.label.slice(0, 5) : d.label}
-            </span>
+            {showLabel && (
+              <span style={{
+                fontSize: isMobile ? '7px' : '9px', fontWeight: isHov ? 700 : 500,
+                color: isHov ? C.text : C.sub, transition: 'color 0.15s',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%',
+              }}>
+                {d.label.length > (isMobile ? 3 : 5) ? d.label.slice(0, isMobile ? 3 : 5) : d.label}
+              </span>
+            )}
           </div>
         );
       })}
@@ -323,12 +353,9 @@ const StatCard: React.FC<{
       <div className="rp-stat-top">
         <div className="rp-stat-icon-wrap" style={{ background: bg, color }}>{icon}</div>
         {trend !== undefined && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '3px',
-            fontSize: '11px', fontWeight: 700,
+          <div className="rp-stat-trend" style={{
             color: trend >= 0 ? C.primary : C.red,
             background: trend >= 0 ? C.primaryLight : C.redLight,
-            borderRadius: '100px', padding: '3px 8px',
           }}>
             <IconTrend />
             {trend >= 0 ? '+' : ''}{trend}%
@@ -354,8 +381,16 @@ export const Report: React.FC = () => {
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [dateFocused, setDateFocused] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showMonthlyTable, setShowMonthlyTable] = useState(false);
 
-  // Reload semua data setiap selectedDate berubah
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
   useEffect(() => { loadReports(); }, [selectedDate]);
 
   const loadReports = async () => {
@@ -364,9 +399,7 @@ export const Report: React.FC = () => {
       const month = parseInt(selectedDate.split('-')[1], 10);
       const [daily, monthly, revenue] = await Promise.all([
         reportApi.getDailyReport(selectedDate),
-        // Kirim selectedDate agar monthly report mengambil bulan yang benar
         reportApi.getMonthlyReport(month),
-        // Ambil 30 hari data agar window 7 hari selalu tersedia
         reportApi.getRevenueSummary(30),
       ]);
       setDailyReport(daily);
@@ -380,16 +413,13 @@ export const Report: React.FC = () => {
   };
 
   if (!isAdmin) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', flexDirection: 'column', gap: '14px', color: C.sub }}>
+    <div className="rp-no-access">
       <IconLock />
-      <p style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Anda tidak memiliki akses ke halaman ini</p>
+      <p>Anda tidak memiliki akses ke halaman ini</p>
     </div>
   );
 
-  // ── Build chartData: 7 hari berakhir di selectedDate ──────────────────────
-  const weekDates = get7DayWindow(selectedDate); // ['2024-01-09', ..., '2024-01-15']
-
-  // Buat lookup map dari semua data yang ada agar pencarian O(1)
+  const weekDates = get7DayWindow(selectedDate);
   const revenueMap = new Map<string, number>();
   (revenueSummary?.data || []).forEach((d: any) => {
     revenueMap.set(toDateStr(d.date), d.revenue ?? 0);
@@ -400,14 +430,12 @@ export const Report: React.FC = () => {
     expenseMap.set(toDateStr(d.date), d.expense ?? 0);
   });
 
-  // Gabungkan ke 7 titik — tanggal yang tidak ada data akan bernilai 0
   const chartData: ChartPoint[] = weekDates.map(dateStr => ({
     date: dateStr,
     revenue: revenueMap.get(dateStr) ?? 0,
     expense: expenseMap.get(dateStr) ?? 0,
   }));
 
-  // Bar chart tetap pakai 14 hari terakhir dari monthlyReport
   const barData = (monthlyReport?.daily || []).slice(-14).map((d: any) => ({
     label: d.date ? toDateStr(d.date).slice(5) : '',
     revenue: d.revenue || 0,
@@ -419,10 +447,17 @@ export const Report: React.FC = () => {
   const totalOrders = dailyReport?.total_orders || 0;
   const netProfit = dailyReport?.net_profit || 0;
 
-  // Label range 7 hari untuk subtitle chart
   const weekLabel = weekDates.length === 7
     ? `${weekDates[0].slice(5)} – ${weekDates[6].slice(5)}`
     : '7 hari terakhir';
+
+  const monthlyData = monthlyReport?.daily || [];
+  const monthlyTotal = {
+    orders: monthlyReport?.total_orders || 0,
+    revenue: monthlyReport?.total_revenue || 0,
+    expense: monthlyReport?.total_expense || 0,
+    profit: monthlyReport?.total_profit || 0,
+  };
 
   return (
     <div className="rp-root">
@@ -440,13 +475,8 @@ export const Report: React.FC = () => {
         </div>
 
         <div className="rp-header-actions">
-          {/* Date picker */}
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <span style={{
-              position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)',
-              color: dateFocused ? C.primary : C.sub, transition: 'color 0.2s',
-              display: 'flex', alignItems: 'center', pointerEvents: 'none',
-            }}>
+          <div className="rp-date-wrap">
+            <span className="rp-date-icon" style={{ color: dateFocused ? C.primary : C.sub }}>
               <IconCalendar />
             </span>
             <input
@@ -465,7 +495,7 @@ export const Report: React.FC = () => {
 
           {activeTab === 'expenses' && (
             <button onClick={() => setIsExpenseModalOpen(true)} className="rp-btn-primary">
-              <IconPlus /> Tambah Pengeluaran
+              <IconPlus /> {!isMobile && 'Tambah Pengeluaran'}
             </button>
           )}
         </div>
@@ -514,13 +544,9 @@ export const Report: React.FC = () => {
                 <h2 className="rp-card-title">Tren Pendapatan & Pengeluaran</h2>
                 <p className="rp-card-sub">{weekLabel} · hover untuk detail</p>
               </div>
-              {revenueSummary && (
+              {revenueSummary && !isMobile && (
                 <div style={{ textAlign: 'right' }}>
-                  <p style={{
-                    margin: '0 0 2px', fontSize: '22px', fontWeight: 800,
-                    color: C.primary, letterSpacing: '-0.03em',
-                    fontFamily: "'Sora', sans-serif",
-                  }}>
+                  <p className="rp-card-header-value">
                     {formatCurrency(chartData.reduce((s, d) => s + d.revenue, 0))}
                   </p>
                   <p style={{ margin: 0, fontSize: '11px', color: C.sub }}>
@@ -544,9 +570,9 @@ export const Report: React.FC = () => {
                 </div>
               </div>
               <BarChart data={barData} />
-              <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', marginTop: '14px' }}>
+              <div className="rp-legend-row">
                 {[{ c: C.primary, l: 'Pendapatan' }, { c: C.red, l: 'Pengeluaran' }].map((x, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', color: C.sub }}>
+                  <div key={i} className="rp-legend-item">
                     <div style={{ width: '12px', height: '4px', borderRadius: '2px', background: x.c }} />
                     {x.l}
                   </div>
@@ -554,20 +580,19 @@ export const Report: React.FC = () => {
               </div>
             </div>
 
-            {/* Monthly table */}
-            <div className="rp-card rp-table-card">
+            {/* Monthly table - Desktop */}
+            <div className="rp-card rp-table-card rp-table-card--desktop">
               <div className="rp-card-header" style={{ marginBottom: 16 }}>
                 <div>
                   <h3 className="rp-card-title">Laporan Bulanan</h3>
                   <p className="rp-card-sub">Ringkasan per hari</p>
                 </div>
-                {/* Monthly summary pills */}
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 700, background: C.primaryLight, color: C.primary, borderRadius: '100px', padding: '3px 10px' }}>
-                    {formatCurrency(monthlyReport?.total_revenue || 0)}
+                <div className="rp-monthly-pills">
+                  <span className="rp-pill rp-pill--rev">
+                    {formatCurrency(monthlyTotal.revenue)}
                   </span>
-                  <span style={{ fontSize: '11px', fontWeight: 700, background: C.redLight, color: C.red, borderRadius: '100px', padding: '3px 10px' }}>
-                    -{formatCurrency(monthlyReport?.total_expense || 0)}
+                  <span className="rp-pill rp-pill--exp">
+                    -{formatCurrency(monthlyTotal.expense)}
                   </span>
                 </div>
               </div>
@@ -581,14 +606,14 @@ export const Report: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {(monthlyReport?.daily || []).map((day: any, i: number) => {
+                    {monthlyData.map((day: any, i: number) => {
                       const profit = day.net_profit || 0;
                       return (
                         <tr key={i} className="rp-tr">
                           <td className="rp-td rp-td-date">{toDateStr(day.date) || '—'}</td>
                           <td className="rp-td rp-td-right">{day.order_count || 0}</td>
-                          <td className="rp-td rp-td-right" style={{ color: C.primary, fontWeight: 700 }}>{formatCurrency(day.revenue || 0)}</td>
-                          <td className="rp-td rp-td-right" style={{ color: C.red }}>{formatCurrency(day.expense || 0)}</td>
+                          <td className="rp-td rp-td-right rp-td-rev">{formatCurrency(day.revenue || 0)}</td>
+                          <td className="rp-td rp-td-right rp-td-exp">{formatCurrency(day.expense || 0)}</td>
                           <td className="rp-td rp-td-right" style={{ fontWeight: 700, color: profit >= 0 ? C.primary : C.red }}>
                             {profit >= 0 ? '+' : ''}{formatCurrency(profit)}
                           </td>
@@ -599,16 +624,124 @@ export const Report: React.FC = () => {
                   <tfoot>
                     <tr className="rp-tfoot-row">
                       <td className="rp-td rp-tfoot-label">Total Bulan Ini</td>
-                      <td className="rp-td rp-td-right rp-tfoot-val">{monthlyReport?.total_orders || 0}</td>
-                      <td className="rp-td rp-td-right rp-tfoot-val" style={{ color: C.primary }}>{formatCurrency(monthlyReport?.total_revenue || 0)}</td>
-                      <td className="rp-td rp-td-right rp-tfoot-val" style={{ color: C.red }}>{formatCurrency(monthlyReport?.total_expense || 0)}</td>
-                      <td className="rp-td rp-td-right rp-tfoot-val" style={{ color: (monthlyReport?.total_profit || 0) >= 0 ? C.primary : C.red }}>
-                        {formatCurrency(monthlyReport?.total_profit || 0)}
+                      <td className="rp-td rp-td-right rp-tfoot-val">{monthlyTotal.orders}</td>
+                      <td className="rp-td rp-td-right rp-tfoot-val rp-td-rev">{formatCurrency(monthlyTotal.revenue)}</td>
+                      <td className="rp-td rp-td-right rp-tfoot-val rp-td-exp">{formatCurrency(monthlyTotal.expense)}</td>
+                      <td className="rp-td rp-td-right rp-tfoot-val" style={{ color: monthlyTotal.profit >= 0 ? C.primary : C.red }}>
+                        {formatCurrency(monthlyTotal.profit)}
                       </td>
                     </tr>
                   </tfoot>
                 </table>
               </div>
+            </div>
+
+            {/* ── MOBILE: Monthly Report Cards ── */}
+            <div className="rp-card rp-table-card rp-table-card--mobile">
+              <div className="rp-mobile-monthly-header">
+                <div className="rp-mobile-monthly-header-top">
+                  <div>
+                    <h3 className="rp-card-title">Laporan Bulanan</h3>
+                    <p className="rp-card-sub">
+                      {monthlyData.length} hari · {new Date(selectedDate).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+                    </p>
+                  </div>
+                  <button 
+                    className="rp-mobile-table-toggle"
+                    onClick={() => setShowMonthlyTable(!showMonthlyTable)}
+                    aria-expanded={showMonthlyTable}
+                  >
+                    <span className="rp-mobile-table-toggle-text">
+                      {showMonthlyTable ? 'Sembunyikan' : 'Lihat Detail'}
+                    </span>
+                    <span className={`rp-mobile-table-toggle-chevron ${showMonthlyTable ? 'rp-mobile-table-toggle-chevron--open' : ''}`}>
+                      <IconChevronDown />
+                    </span>
+                  </button>
+                </div>
+
+                <div className="rp-mobile-monthly-quick-stats">
+                  <div className="rp-mobile-quick-stat">
+                    <span className="rp-mobile-quick-stat-label">Pendapatan</span>
+                    <span className="rp-mobile-quick-stat-value" style={{ color: C.primary }}>
+                      {formatCurrency(monthlyTotal.revenue)}
+                    </span>
+                  </div>
+                  <div className="rp-mobile-quick-stat">
+                    <span className="rp-mobile-quick-stat-label">Pengeluaran</span>
+                    <span className="rp-mobile-quick-stat-value" style={{ color: C.red }}>
+                      {formatCurrency(monthlyTotal.expense)}
+                    </span>
+                  </div>
+                  <div className="rp-mobile-quick-stat">
+                    <span className="rp-mobile-quick-stat-label">Orders</span>
+                    <span className="rp-mobile-quick-stat-value" style={{ color: C.blue }}>
+                      {monthlyTotal.orders}
+                    </span>
+                  </div>
+                  <div className="rp-mobile-quick-stat">
+                    <span className="rp-mobile-quick-stat-label">Laba</span>
+                    <span className="rp-mobile-quick-stat-value" style={{ color: monthlyTotal.profit >= 0 ? C.purple : C.red }}>
+                      {formatCurrency(monthlyTotal.profit)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {showMonthlyTable && (
+                <div className="rp-mobile-monthly-days">
+                  {monthlyData.length === 0 ? (
+                    <div className="rp-mobile-monthly-empty">
+                      <p>Belum ada data untuk bulan ini</p>
+                    </div>
+                  ) : (
+                    monthlyData.map((day: any, i: number) => {
+                      const profit = day.net_profit || 0;
+                      const isProfit = profit >= 0;
+                      const dateLabel = day.date ? toDateStr(day.date) : '—';
+                      const dayName = day.date 
+                        ? new Date(day.date).toLocaleDateString('id-ID', { weekday: 'short' })
+                        : '';
+                      
+                      return (
+                        <div key={i} className="rp-mobile-day-card">
+                          <div className="rp-mobile-day-card-left">
+                            <div className={`rp-mobile-day-dot ${isProfit ? 'rp-mobile-day-dot--profit' : 'rp-mobile-day-dot--loss'}`} />
+                            <div>
+                              <p className="rp-mobile-day-date">
+                                {dateLabel.slice(5)}
+                                <span className="rp-mobile-day-name">{dayName}</span>
+                              </p>
+                            </div>
+                          </div>
+                          <div className="rp-mobile-day-card-right">
+                            <div className="rp-mobile-day-metrics">
+                              <span className="rp-mobile-day-metric">
+                                <span className="rp-mobile-day-metric-label">Orders</span>
+                                <span className="rp-mobile-day-metric-value">{day.order_count || 0}</span>
+                              </span>
+                              <span className="rp-mobile-day-metric rp-mobile-day-metric--rev">
+                                <span className="rp-mobile-day-metric-label">Rev</span>
+                                <span className="rp-mobile-day-metric-value">{formatCurrency(day.revenue || 0)}</span>
+                              </span>
+                              <span className="rp-mobile-day-metric rp-mobile-day-metric--exp">
+                                <span className="rp-mobile-day-metric-label">Exp</span>
+                                <span className="rp-mobile-day-metric-value">{formatCurrency(day.expense || 0)}</span>
+                              </span>
+                              <span className={`rp-mobile-day-metric ${isProfit ? 'rp-mobile-day-metric--profit' : 'rp-mobile-day-metric--loss'}`}>
+                                <span className="rp-mobile-day-metric-label">Laba</span>
+                                <span className="rp-mobile-day-metric-value">
+                                  {isProfit ? '+' : ''}{formatCurrency(profit)}
+                                </span>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -616,7 +749,7 @@ export const Report: React.FC = () => {
 
       {/* ── EXPENSES TAB ── */}
       {activeTab === 'expenses' && (
-        <div className="rp-card" style={{ padding: '24px' }}>
+        <div className="rp-card" style={{ padding: isMobile ? '16px' : '24px' }}>
           <ExpenseList />
         </div>
       )}
@@ -642,6 +775,7 @@ export const Report: React.FC = () => {
         @keyframes rp-card-in { from{opacity:0;transform:scale(.9) translateY(14px)} to{opacity:1;transform:scale(1) translateY(0)} }
         @keyframes rp-fade-up { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
         @keyframes rp-blink { 0%,80%,100%{opacity:0} 40%{opacity:1} }
+        @keyframes rp-expand-in { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
 
         .rp-root {
           display: flex; flex-direction: column; gap: 20px;
@@ -649,10 +783,19 @@ export const Report: React.FC = () => {
           animation: rp-fade-up 0.35s ease;
         }
 
-        .rp-loading-text {
-          font-size: 15px; font-weight: 700; color: ${C.text};
-          font-family: 'Plus Jakarta Sans', sans-serif; margin-top: 4px;
+        .rp-loading-overlay {
+          position: fixed; inset: 0; z-index: 9998;
+          display: flex; align-items: center; justify-content: center;
+          background: rgba(244,240,232,0.65); backdrop-filter: blur(8px);
         }
+        .rp-loading-card {
+          background: white; border-radius: 28px; padding: 36px 52px;
+          box-shadow: 0 24px 64px rgba(0,0,0,0.13), 0 4px 16px rgba(91,140,90,0.1);
+          border: 1px solid rgba(91,140,90,0.1);
+          display: flex; flex-direction: column; align-items: center; gap: 8px;
+          animation: rp-card-in 0.28s cubic-bezier(0.34,1.1,0.64,1);
+        }
+        .rp-loading-text { font-size: 15px; font-weight: 700; color: ${C.text}; font-family: 'Plus Jakarta Sans', sans-serif; margin-top: 4px; }
         .rp-dots { display: flex; gap: 5px; }
         .rp-dots span {
           width: 6px; height: 6px; border-radius: 50%;
@@ -661,6 +804,12 @@ export const Report: React.FC = () => {
         }
         .rp-dots span:nth-child(2){animation-delay:.2s}
         .rp-dots span:nth-child(3){animation-delay:.4s}
+
+        .rp-no-access {
+          display: flex; align-items: center; justify-content: center;
+          height: 60vh; flex-direction: column; gap: 14px; color: ${C.sub};
+          font-size: 14px; font-weight: 600;
+        }
 
         .rp-header {
           display: flex; align-items: flex-start; justify-content: space-between;
@@ -679,6 +828,11 @@ export const Report: React.FC = () => {
         .rp-subtitle { font-size: 13px; color: ${C.sub}; margin: 0; }
         .rp-header-actions { display: flex; gap: 10px; align-items: center; flex-shrink: 0; flex-wrap: wrap; }
 
+        .rp-date-wrap { position: relative; display: flex; align-items: center; }
+        .rp-date-icon {
+          position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+          display: flex; align-items: center; pointer-events: none; transition: color 0.2s;
+        }
         .rp-date-input {
           padding: 9px 12px 9px 34px; border-radius: 11px;
           font-size: 13px; color: ${C.text}; background: white;
@@ -693,7 +847,7 @@ export const Report: React.FC = () => {
           color: white; font-size: 13px; font-weight: 700;
           font-family: 'Plus Jakarta Sans', sans-serif;
           box-shadow: 0 4px 14px rgba(91,140,90,0.3);
-          transition: all 0.2s;
+          transition: all 0.2s; white-space: nowrap;
         }
         .rp-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 7px 20px rgba(91,140,90,0.38); }
 
@@ -714,6 +868,11 @@ export const Report: React.FC = () => {
         .rp-stat-icon-wrap {
           width: 38px; height: 38px; border-radius: 11px;
           display: flex; align-items: center; justify-content: center;
+        }
+        .rp-stat-trend {
+          display: flex; align-items: center; gap: 3px;
+          font-size: 11px; font-weight: 700;
+          border-radius: 100px; padding: 3px 8px;
         }
         .rp-stat-value {
           font-family: 'Sora', sans-serif;
@@ -761,6 +920,11 @@ export const Report: React.FC = () => {
         }
         .rp-card-title { font-size: 15px; font-weight: 700; color: ${C.text}; margin: 0 0 3px; }
         .rp-card-sub { font-size: 11.5px; color: ${C.sub}; margin: 0; }
+        .rp-card-header-value {
+          margin: 0 0 2px; font-size: 22px; font-weight: 800;
+          color: ${C.primary}; letter-spacing: -0.03em;
+          font-family: 'Sora', sans-serif;
+        }
 
         .rp-content { display: flex; flex-direction: column; gap: 18px; }
         .rp-bottom-grid {
@@ -768,6 +932,29 @@ export const Report: React.FC = () => {
           grid-template-columns: 320px 1fr;
           gap: 18px;
         }
+
+        .rp-chart-tooltip {
+          position: absolute; top: 16px;
+          background: white; border-radius: 12px; padding: 11px 15px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.13); border: 1px solid rgba(0,0,0,0.06);
+          font-size: 12px; pointer-events: none; min-width: 165px; z-index: 10;
+        }
+        .rp-bar-tooltip {
+          position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+          background: white; border-radius: 10px; padding: 9px 12px; font-size: 11px;
+          box-shadow: 0 6px 20px rgba(0,0,0,0.12); border: 1px solid rgba(0,0,0,0.06);
+          white-space: nowrap; z-index: 10; margin-bottom: 5px; pointer-events: none;
+        }
+
+        .rp-legend-row { display: flex; gap: 14px; justify-content: center; margin-top: 14px; }
+        .rp-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: ${C.sub}; }
+
+        .rp-monthly-pills { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+        .rp-pill {
+          font-size: 11px; font-weight: 700; border-radius: 100px; padding: 3px 10px;
+        }
+        .rp-pill--rev { background: ${C.primaryLight}; color: ${C.primary}; }
+        .rp-pill--exp { background: ${C.redLight}; color: ${C.red}; }
 
         .rp-table-scroll { overflow-x: auto; margin: -4px; padding: 4px; }
         .rp-table { width: 100%; border-collapse: collapse; font-size: 12px; }
@@ -783,10 +970,150 @@ export const Report: React.FC = () => {
         .rp-td { padding: 8px 10px; color: ${C.text}; }
         .rp-td-date { font-weight: 600; white-space: nowrap; }
         .rp-td-right { text-align: right; }
+        .rp-td-rev { color: ${C.primary}; font-weight: 700; }
+        .rp-td-exp { color: ${C.red}; }
         .rp-tfoot-row { background: #f9f8f5; border-top: 1.5px solid #e8e4de; }
         .rp-tfoot-label { font-weight: 800; color: ${C.text}; font-size: 12px; padding: 10px; }
         .rp-tfoot-val { text-align: right; font-weight: 800; font-size: 12px; padding: 10px; }
 
+        /* ═══════════════════════════════════════════ */
+        /* ── MOBILE MONTHLY TABLE CARDS ── */
+        /* ═══════════════════════════════════════════ */
+        .rp-table-card--mobile { display: none; }
+
+        .rp-mobile-monthly-header {
+          display: flex; flex-direction: column; gap: 14px;
+        }
+        .rp-mobile-monthly-header-top {
+          display: flex; align-items: flex-start; justify-content: space-between;
+          gap: 8px;
+        }
+
+        .rp-mobile-table-toggle {
+          display: flex; align-items: center; gap: 6px;
+          border: 1.5px solid #e8e4dc;
+          background: white; border-radius: 10px;
+          padding: 7px 12px; cursor: pointer;
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 12px; font-weight: 600; color: ${C.sub};
+          transition: all 0.2s; white-space: nowrap; flex-shrink: 0;
+        }
+        .rp-mobile-table-toggle:hover { background: #f5f2ed; color: ${C.text}; }
+        .rp-mobile-table-toggle[aria-expanded="true"] {
+          background: ${C.primary}; color: white; border-color: ${C.primary};
+        }
+        .rp-mobile-table-toggle-text { font-size: 12px; }
+        .rp-mobile-table-toggle-chevron {
+          display: flex; align-items: center; transition: transform 0.25s ease;
+        }
+        .rp-mobile-table-toggle-chevron--open { transform: rotate(180deg); }
+
+        .rp-mobile-monthly-quick-stats {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 6px;
+        }
+        .rp-mobile-quick-stat {
+          background: #f9f8f5; border-radius: 10px;
+          padding: 8px 10px; text-align: center;
+          display: flex; flex-direction: column; gap: 2px;
+        }
+        .rp-mobile-quick-stat-label {
+          font-size: 9px; font-weight: 700; color: ${C.sub};
+          text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .rp-mobile-quick-stat-value {
+          font-family: 'Sora', sans-serif;
+          font-size: 12px; font-weight: 800; letter-spacing: -0.02em;
+        }
+
+        .rp-mobile-monthly-days {
+          display: flex; flex-direction: column; gap: 4px;
+          margin-top: 14px;
+          animation: rp-expand-in 0.25s ease;
+          max-height: 60vh;
+          overflow-y: auto;
+          border-top: 1px solid #f0ede8;
+          padding-top: 12px;
+        }
+        .rp-mobile-monthly-empty {
+          text-align: center; padding: 24px;
+          color: ${C.sub}; font-size: 13px;
+        }
+
+        .rp-mobile-day-card {
+          display: flex; align-items: stretch;
+          background: #faf9f6; border-radius: 12px;
+          padding: 10px 12px; gap: 12px;
+          transition: background 0.15s;
+          border: 1px solid transparent;
+        }
+        .rp-mobile-day-card:active { background: #f0ede8; }
+        .rp-mobile-day-card-left {
+          display: flex; align-items: center; gap: 8px;
+          flex-shrink: 0; min-width: 70px;
+        }
+        .rp-mobile-day-dot {
+          width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+        }
+        .rp-mobile-day-dot--profit { background: ${C.primary}; }
+        .rp-mobile-day-dot--loss { background: ${C.red}; }
+        .rp-mobile-day-date {
+          font-size: 12px; font-weight: 700; color: ${C.text};
+          line-height: 1.2;
+        }
+        .rp-mobile-day-name {
+          display: block; font-size: 10px; font-weight: 500;
+          color: ${C.sub}; margin-top: 1px;
+        }
+        .rp-mobile-day-card-right {
+          flex: 1; min-width: 0;
+        }
+        .rp-mobile-day-metrics {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 4px;
+        }
+        .rp-mobile-day-metric {
+          display: flex; flex-direction: column; gap: 1px;
+          text-align: center;
+        }
+        .rp-mobile-day-metric-label {
+          font-size: 8px; font-weight: 700; color: ${C.sub};
+          text-transform: uppercase; letter-spacing: 0.04em;
+        }
+        .rp-mobile-day-metric-value {
+          font-size: 10.5px; font-weight: 700; color: ${C.text};
+        }
+        .rp-mobile-day-metric--rev .rp-mobile-day-metric-value { color: ${C.primary}; }
+        .rp-mobile-day-metric--exp .rp-mobile-day-metric-value { color: ${C.red}; }
+        .rp-mobile-day-metric--profit .rp-mobile-day-metric-value { color: ${C.purple}; }
+        .rp-mobile-day-metric--loss .rp-mobile-day-metric-value { color: ${C.red}; }
+
+        /* Mobile chart summary */
+        .rp-mobile-chart-summary {
+          display: none;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+          margin-top: 12px;
+          padding: 12px;
+          background: ${C.primaryLight};
+          border-radius: 12px;
+          border: 1px solid rgba(91,140,90,0.1);
+        }
+        .rp-mobile-chart-summary-item {
+          display: flex; flex-direction: column; gap: 3px;
+        }
+        .rp-mobile-chart-summary-label {
+          font-size: 10px; font-weight: 700; color: ${C.sub};
+          text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .rp-mobile-chart-summary-value {
+          font-family: 'Sora', sans-serif;
+          font-size: 14px; font-weight: 800;
+        }
+
+        /* ═══════════ RESPONSIVE ═══════════ */
         @media (max-width: 1200px) {
           .rp-bottom-grid { grid-template-columns: 280px 1fr; }
         }
@@ -798,30 +1125,64 @@ export const Report: React.FC = () => {
         @media (max-width: 767px) {
           .rp-root { gap: 14px; }
           .rp-header { flex-direction: column; gap: 14px; }
-          .rp-header-actions { align-self: flex-start; flex-wrap: wrap; }
+          .rp-header-actions { align-self: flex-start; flex-wrap: wrap; width: 100%; }
+          .rp-date-wrap { flex: 1; }
+          .rp-date-input { width: 100%; }
           .rp-title { font-size: 20px; }
+          .rp-subtitle { font-size: 12px; }
           .rp-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
           .rp-stat-card { padding: 14px 16px; border-radius: 16px; }
           .rp-stat-value { font-size: 17px; }
+          .rp-stat-label { font-size: 10px; }
+          .rp-stat-icon-wrap { width: 34px; height: 34px; border-radius: 10px; }
+          .rp-stat-icon-wrap svg { width: 17px; height: 17px; }
           .rp-card { padding: 16px; border-radius: 18px; }
-          .rp-card-header { flex-direction: column; gap: 10px; }
+          .rp-card-header { flex-direction: column; gap: 10px; margin-bottom: 14px; }
+          .rp-card-title { font-size: 14px; }
           .rp-tabs { padding: 4px; }
           .rp-tab { padding: 8px 14px; font-size: 12px; }
           .rp-btn-primary { padding: 9px 14px; font-size: 12px; }
-          .rp-date-input { font-size: 12px; }
+          .rp-date-input { font-size: 12px; padding: 8px 10px 8px 30px; }
+          .rp-date-icon { left: 10px; }
+          .rp-date-icon svg { width: 12px; height: 12px; }
+
+          .rp-table-card--desktop { display: none; }
+          .rp-table-card--mobile { display: block; }
+
+          .rp-mobile-chart-summary { display: grid; }
+          .rp-bottom-grid { gap: 12px; }
         }
         @media (max-width: 479px) {
-          .rp-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+          .rp-stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
           .rp-stat-value { font-size: 15px; }
           .rp-stat-card { padding: 12px 14px; border-radius: 14px; }
-          .rp-stat-icon-wrap { width: 32px; height: 32px; border-radius: 9px; }
+          .rp-stat-icon-wrap { width: 30px; height: 30px; border-radius: 8px; }
           .rp-title { font-size: 18px; }
-          .rp-header-actions { width: 100%; }
-          .rp-btn-primary { flex: 1; justify-content: center; }
+          .rp-header-actions { flex-direction: column; gap: 8px; }
+          .rp-btn-primary { width: 100%; justify-content: center; }
+          .rp-card { padding: 14px; border-radius: 16px; }
+          .rp-card-header-value { font-size: 18px; }
+          .rp-loading-card { padding: 28px 24px; border-radius: 22px; }
+
+          .rp-mobile-monthly-quick-stats { grid-template-columns: repeat(2, 1fr); gap: 4px; }
+          .rp-mobile-quick-stat { padding: 6px 8px; }
+          .rp-mobile-quick-stat-value { font-size: 11px; }
+
+          .rp-mobile-day-card { padding: 8px 10px; gap: 8px; }
+          .rp-mobile-day-card-left { min-width: 55px; }
+          .rp-mobile-day-date { font-size: 11px; }
+          .rp-mobile-day-metrics { grid-template-columns: repeat(4, 1fr); gap: 2px; }
+          .rp-mobile-day-metric-value { font-size: 9.5px; }
+          .rp-mobile-day-metric-label { font-size: 7px; }
+
+          .rp-mobile-table-toggle { padding: 5px 10px; font-size: 11px; }
+          .rp-mobile-table-toggle-text { font-size: 11px; }
         }
         @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
           .rp-stats-grid { grid-template-columns: repeat(4, 1fr); }
           .rp-bottom-grid { grid-template-columns: 260px 1fr; }
+          .rp-table-card--desktop { display: block; }
+          .rp-table-card--mobile { display: none; }
         }
       `}</style>
     </div>
