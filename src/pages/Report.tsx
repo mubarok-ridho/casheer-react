@@ -1123,25 +1123,30 @@ export const Report: React.FC = () => {
           .rp-title { font-size: 22px; }
         }
         @media (max-width: 767px) {
-          .rp-root { gap: 14px; }
-          .rp-header { flex-direction: column; gap: 14px; }
-          .rp-header-actions { align-self: flex-start; flex-wrap: wrap; width: 100%; }
+          .rp-root { gap: 12px; }
+          .rp-header { flex-direction: column; gap: 10px; }
+          .rp-header-actions { width: 100%; display: grid; grid-template-columns: 1fr auto; gap: 8px; }
           .rp-date-wrap { flex: 1; }
           .rp-date-input { width: 100%; }
-          .rp-title { font-size: 20px; }
-          .rp-subtitle { font-size: 12px; }
-          .rp-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-          .rp-stat-card { padding: 14px 16px; border-radius: 16px; }
-          .rp-stat-value { font-size: 17px; }
-          .rp-stat-label { font-size: 10px; }
-          .rp-stat-icon-wrap { width: 34px; height: 34px; border-radius: 10px; }
-          .rp-stat-icon-wrap svg { width: 17px; height: 17px; }
-          .rp-card { padding: 16px; border-radius: 18px; }
-          .rp-card-header { flex-direction: column; gap: 10px; margin-bottom: 14px; }
-          .rp-card-title { font-size: 14px; }
-          .rp-tabs { padding: 4px; }
-          .rp-tab { padding: 8px 14px; font-size: 12px; }
-          .rp-btn-primary { padding: 9px 14px; font-size: 12px; }
+          .rp-title { font-size: 19px; }
+          .rp-subtitle { font-size: 11px; }
+          .rp-header-eyebrow { margin-bottom: 4px; font-size: 10px; }
+          .rp-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+          .rp-stat-card { padding: 12px 14px; border-radius: 14px; }
+          .rp-stat-value { font-size: 14px; }
+          .rp-stat-label { font-size: 9px; }
+          .rp-stat-sub { font-size: 10px; }
+          .rp-stat-top { margin-bottom: 8px; }
+          .rp-stat-icon-wrap { width: 28px; height: 28px; border-radius: 8px; }
+          .rp-stat-icon-wrap svg { width: 14px; height: 14px; }
+          .rp-card { padding: 13px; border-radius: 16px; }
+          .rp-card-header { flex-direction: column; gap: 8px; margin-bottom: 10px; }
+          .rp-card-title { font-size: 13px; }
+          .rp-card-sub { font-size: 10.5px; }
+          .rp-tabs { padding: 3px; width: 100%; }
+          .rp-tab { padding: 8px 12px; font-size: 12px; flex: 1; justify-content: center; }
+          .rp-tabs-wrap { width: 100%; }
+          .rp-btn-primary { padding: 9px 12px; font-size: 12px; }
           .rp-date-input { font-size: 12px; padding: 8px 10px 8px 30px; }
           .rp-date-icon { left: 10px; }
           .rp-date-icon svg { width: 12px; height: 12px; }
@@ -1149,8 +1154,8 @@ export const Report: React.FC = () => {
           .rp-table-card--desktop { display: none; }
           .rp-table-card--mobile { display: block; }
 
-          .rp-mobile-chart-summary { display: grid; }
-          .rp-bottom-grid { gap: 12px; }
+          .rp-mobile-chart-summary { display: grid; margin-top: 8px; }
+          .rp-bottom-grid { gap: 10px; }
         }
         @media (max-width: 479px) {
           .rp-stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -1164,16 +1169,18 @@ export const Report: React.FC = () => {
           .rp-card-header-value { font-size: 18px; }
           .rp-loading-card { padding: 28px 24px; border-radius: 22px; }
 
-          .rp-mobile-monthly-quick-stats { grid-template-columns: repeat(2, 1fr); gap: 4px; }
-          .rp-mobile-quick-stat { padding: 6px 8px; }
-          .rp-mobile-quick-stat-value { font-size: 11px; }
+          .rp-mobile-monthly-quick-stats { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+          .rp-mobile-quick-stat { padding: 10px 12px; border-radius: 12px; }
+          .rp-mobile-quick-stat-value { font-size: 13px; }
+          .rp-mobile-quick-stat-label { font-size: 9.5px; }
 
-          .rp-mobile-day-card { padding: 8px 10px; gap: 8px; }
-          .rp-mobile-day-card-left { min-width: 55px; }
-          .rp-mobile-day-date { font-size: 11px; }
-          .rp-mobile-day-metrics { grid-template-columns: repeat(4, 1fr); gap: 2px; }
-          .rp-mobile-day-metric-value { font-size: 9.5px; }
-          .rp-mobile-day-metric-label { font-size: 7px; }
+          .rp-mobile-day-card { padding: 10px 12px; gap: 10px; border-radius: 14px; background: white; border: 1.5px solid #f0ede8; }
+          .rp-mobile-day-card-left { min-width: 62px; }
+          .rp-mobile-day-date { font-size: 12px; }
+          .rp-mobile-day-metrics { grid-template-columns: repeat(4, 1fr); gap: 4px; }
+          .rp-mobile-day-metric-value { font-size: 10px; }
+          .rp-mobile-day-metric-label { font-size: 8px; }
+          .rp-mobile-monthly-days { gap: 6px; padding-top: 14px; }
 
           .rp-mobile-table-toggle { padding: 5px 10px; font-size: 11px; }
           .rp-mobile-table-toggle-text { font-size: 11px; }
